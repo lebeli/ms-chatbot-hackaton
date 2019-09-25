@@ -1,16 +1,16 @@
 const {
-    ActivityHandler,
-    MessageFactory,
-    CardFactory
-} = require('botbuilder');
+    ActivityHandler
+    // MessageFactory,
+    // CardFactory
+} = require("botbuilder");
 const {
     LuisRecognizer
-} = require('botbuilder-ai');
-var Store = require('./store');
-const { QnAMaker } = require('botbuilder-ai');
+} = require("botbuilder-ai");
+// var Store = require("./store");
+const { QnAMaker } = require("botbuilder-ai");
 
 class FestoBot extends ActivityHandler {
-    constructor() {
+    constructor () {
         super();
         const endpointQnA = {
             knowledgeBaseId: "8b28463a-ad6f-45fc-9cba-789a2d935b1f",
@@ -32,33 +32,32 @@ class FestoBot extends ActivityHandler {
             }
             var recognizerResult = await recognizer.recognize(context);
             var topIntent = LuisRecognizer.topIntent(recognizerResult);
-            if (!topIntent || topIntent == "") {
+            if (!topIntent || topIntent === "") {
                 topIntent = "None";
             }
             switch (topIntent) {
-                case 'help':
-                    await context.sendActivity(`Happy to help you '${topIntent}'`);
-                    break;
-                case 'CreateTicket':
-                    // #TODO
-                    break;
-                case 'ContactHelpdesk':
-                    // #TODO
-                    break;
-                case 'QnAMaker':
-                    let result = await this.searchKnowledgeBase(context);
-                        if (result.length) {
-                            console.log(result);
-                            await context.sendActivity(result[0].answer);
-                            
-                        } else {
-                            await context.sendActivity("I cannot answer your question.");
-                        }
-                    break;
-                
-                default:
-                    await context.sendActivity(`Top intent is '${topIntent}'`);
-                    break;
+            case "help":
+                await context.sendActivity(`Happy to help you '${topIntent}'`);
+                break;
+            case "CreateTicket":
+                // #TODO
+                break;
+            case "ContactHelpdesk":
+                // #TODO
+                break;
+            case "QnAMaker": {
+                const result = await this.searchKnowledgeBase(context);
+                if (result.length) {
+                    console.log(result);
+                    await context.sendActivity(result[0].answer);
+                } else {
+                    await context.sendActivity("I cannot answer your question.");
+                }
+                break;
+            }
+            default:
+                await context.sendActivity(`Top intent is '${topIntent}'`);
+                break;
             }
 
             await next();
@@ -68,12 +67,13 @@ class FestoBot extends ActivityHandler {
             const membersAdded = context.activity.membersAdded;
             for (let cnt = 0; cnt < membersAdded.length; ++cnt) {
                 if (membersAdded[cnt].id !== context.activity.recipient.id) {
-                    await context.sendActivity('Hello and welcome!');
+                    await context.sendActivity("Hello and welcome!");
                 }
             } /* By calling next() you ensure that the next BotHandler is run. */
             await next();
         });
-        this.searchKnowledgeBase = async function(context) {
+
+        this.searchKnowledgeBase = async function (context) {
             var qnaResult = await this.qnaService.getAnswers(context);
             return qnaResult;
             // console.log(context);
@@ -83,56 +83,7 @@ class FestoBot extends ActivityHandler {
             //     await context.sendActivity("I cannot answer your question.");
             // }
             // await next();
-
-        }
-        this.searchForHotelsAction = function(entities) {
-            var hotels = this.getHotels(entities);
-            if (hotels == null || !hotels.length) {
-                return null;
-            }
-            var attachments = [];
-            for (let i = 0; i < hotels.length; i++) {
-                const hotel = hotels[i];
-                var attachment = CardFactory.heroCard(hotel.name, CardFactory.images([hotel.image]), CardFactory.actions([{
-                    type: 'openUrl',
-                    title: 'More details',
-                    value: 'https://www.bing.com/search?q=hotels+in+' + encodeURIComponent(hotel.location)
-                }]));
-                attachments.push(attachment);
-            }
-            return MessageFactory.carousel(attachments);
-        }
-        this.showHotelReviewsAction = function(entities) {
-            var reviews = this.getHotelReviews(entities);
-            if (reviews == null || !reviews.length) {
-                return null;
-            }
-            var attachments = [];
-            for (let i = 0; i < reviews.length; i++) {
-                const review = reviews[i];
-                var attachment = CardFactory.thumbnailCard(review.title, review.text, CardFactory.images([review.image]));
-                attachments.push(attachment);
-            }
-            return MessageFactory.carousel(attachments);
-        }
-        this.getHotels = function(entities) {
-            var destination = null;
-            if (entities.Places_AbsoluteLocation && entities.Places_AbsoluteLocation.length) {
-                destination = entities.AirportCode[0];
-            } else if (entities.AirportCode && entities.AirportCode.length) {
-                destination = entities.AirportCode[0];
-            }
-            if (!destination || !destination.length) return null;
-            return Store.searchHotels(destination);
-        }
-        this.getHotelReviews = function(entities) {
-            var hotelName = null;
-            if (entities.Hotel && entities.Hotel.length) {
-                hotelName = entities.Hotel[0];
-            }
-            if (!hotelName || !hotelName.length) return null;
-            return Store.searchHotelReviews(hotelName);
-        }
+        };
     }
 }
 module.exports.FestoBot = FestoBot;
