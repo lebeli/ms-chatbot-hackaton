@@ -7,6 +7,7 @@ const {
     LuisRecognizer
 } = require('botbuilder-ai');
 var Store = require('./store');
+const { QnAMaker } = require('botbuilder-ai');
 
 class FestoBot extends ActivityHandler {
     constructor() {
@@ -20,8 +21,8 @@ class FestoBot extends ActivityHandler {
         this.onMessage(async (context, next) => {
             var endpointLuis = {
                 applicationId: "e3ed9236-2b5e-45ee-8eac-0f167760ee7c",
-                endpointKey: "016c1648db0c462f8fb3f682e660184d",
-                endpoint: "https://westeurope.api.cognitive.microsoft.com/luis/v2.0/apps/e3ed9236-2b5e-45ee-8eac-0f167760ee7c?verbose=true&timezoneOffset=0&subscription-key=016c1648db0c462f8fb3f682e660184d&q="
+                endpointKey: "7719b427d93d4fdd9722766c75b85f3e",
+                endpoint: "https://westeurope.api.cognitive.microsoft.com/luis/v2.0/apps/e3ed9236-2b5e-45ee-8eac-0f167760ee7c?verbose=true&timezoneOffset=0&subscription-key=7719b427d93d4fdd9722766c75b85f3e&q="
             };
 
             var recognizer = null;
@@ -37,7 +38,22 @@ class FestoBot extends ActivityHandler {
             switch (topIntent) {
                 case 'help':
                     await context.sendActivity(`Happy to help you '${topIntent}'`);
-                case 'None':
+                    break;
+                case 'CreateTicket':
+                    // #TODO
+                    break;
+                case 'ContactHelpdesk':
+                    // #TODO
+                    break;
+                case 'QnAMaker':
+                    let result = await this.searchKnowledgeBase(context);
+                        if (result.length) {
+                            await context.sendActivity(result[0].answer);
+                        } else {
+                            await context.sendActivity("I cannot answer your question.");
+                        }
+                    break;
+                
                 default:
                     await context.sendActivity(`Top intent is '${topIntent}'`);
                     break;
@@ -45,6 +61,7 @@ class FestoBot extends ActivityHandler {
 
             await next();
         });
+        // Initial Conversation starter
         this.onMembersAdded(async (context, next) => {
             const membersAdded = context.activity.membersAdded;
             for (let cnt = 0; cnt < membersAdded.length; ++cnt) {
@@ -54,6 +71,18 @@ class FestoBot extends ActivityHandler {
             } /* By calling next() you ensure that the next BotHandler is run. */
             await next();
         });
+        this.searchKnowledgeBase = async function(context) {
+            var qnaResult = await this.qnaService.getAnswers(context);
+            return qnaResult;
+            // console.log(context);
+            // if (qnaResult.length) {
+            //     await context.sendActivity(qnaResult[0].answer);
+            // } else {
+            //     await context.sendActivity("I cannot answer your question.");
+            // }
+            // await next();
+
+        }
         this.searchForHotelsAction = function(entities) {
             var hotels = this.getHotels(entities);
             if (hotels == null || !hotels.length) {
