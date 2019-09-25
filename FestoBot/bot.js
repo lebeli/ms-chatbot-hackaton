@@ -48,7 +48,9 @@ class FestoBot extends ActivityHandler {
                 case 'QnAMaker':
                     let result = await this.searchKnowledgeBase(context);
                         if (result.length) {
+                            console.log(result);
                             await context.sendActivity(result[0].answer);
+                            
                         } else {
                             await context.sendActivity("I cannot answer your question.");
                         }
