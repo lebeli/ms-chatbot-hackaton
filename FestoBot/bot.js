@@ -8,9 +8,11 @@ const {
 } = require('botbuilder-ai');
 var Store = require('./store');
 const { QnAMaker } = require('botbuilder-ai');
+const { TicketDialog } = require('./dialogs/ticket-dialog');
+const { DialogSet, DialogTurnStatus } = require('botbuilder-dialogs');
 
 class FestoBot extends ActivityHandler {
-    constructor() {
+    constructor(conversationState, userState) {
         super();
         const endpointQnA = {
             knowledgeBaseId: "8b28463a-ad6f-45fc-9cba-789a2d935b1f",
@@ -18,6 +20,12 @@ class FestoBot extends ActivityHandler {
             host: "https://festokb.azurewebsites.net/qnamaker"
         };
         this.qnaService = new QnAMaker(endpointQnA, {});
+        this.conversationState = conversationState;
+        this.userState = userState;
+        this.dialogState = conversationState.createProperty('DialogState');
+    
+        
+
         this.onMessage(async (context, next) => {
             var endpointLuis = {
                 applicationId: "e3ed9236-2b5e-45ee-8eac-0f167760ee7c",
@@ -35,12 +43,14 @@ class FestoBot extends ActivityHandler {
             if (!topIntent || topIntent == "") {
                 topIntent = "None";
             }
+
             switch (topIntent) {
                 case 'help':
                     await context.sendActivity(`Happy to help you '${topIntent}'`);
                     break;
                 case 'CreateTicket':
-                    // #TODO
+                    this.ticketDialog = new TicketDialog(this.dialogState);
+                    this.ticketDialog.add(this.dialog);
                     break;
                 case 'ContactHelpdesk':
                     // #TODO
@@ -85,54 +95,14 @@ class FestoBot extends ActivityHandler {
             // await next();
 
         }
-        this.searchForHotelsAction = function(entities) {
-            var hotels = this.getHotels(entities);
-            if (hotels == null || !hotels.length) {
-                return null;
-            }
-            var attachments = [];
-            for (let i = 0; i < hotels.length; i++) {
-                const hotel = hotels[i];
-                var attachment = CardFactory.heroCard(hotel.name, CardFactory.images([hotel.image]), CardFactory.actions([{
-                    type: 'openUrl',
-                    title: 'More details',
-                    value: 'https://www.bing.com/search?q=hotels+in+' + encodeURIComponent(hotel.location)
-                }]));
-                attachments.push(attachment);
-            }
-            return MessageFactory.carousel(attachments);
-        }
-        this.showHotelReviewsAction = function(entities) {
-            var reviews = this.getHotelReviews(entities);
-            if (reviews == null || !reviews.length) {
-                return null;
-            }
-            var attachments = [];
-            for (let i = 0; i < reviews.length; i++) {
-                const review = reviews[i];
-                var attachment = CardFactory.thumbnailCard(review.title, review.text, CardFactory.images([review.image]));
-                attachments.push(attachment);
-            }
-            return MessageFactory.carousel(attachments);
-        }
-        this.getHotels = function(entities) {
-            var destination = null;
-            if (entities.Places_AbsoluteLocation && entities.Places_AbsoluteLocation.length) {
-                destination = entities.AirportCode[0];
-            } else if (entities.AirportCode && entities.AirportCode.length) {
-                destination = entities.AirportCode[0];
-            }
-            if (!destination || !destination.length) return null;
-            return Store.searchHotels(destination);
-        }
-        this.getHotelReviews = function(entities) {
-            var hotelName = null;
-            if (entities.Hotel && entities.Hotel.length) {
-                hotelName = entities.Hotel[0];
-            }
-            if (!hotelName || !hotelName.length) return null;
-            return Store.searchHotelReviews(hotelName);
-        }
+        this.onDialog(async (context, next) => {
+            /* Save any state changes. The load happened during the execution of the Dialog. */
+            await this.conversationState.saveChanges(context, false);
+            await this.userState.saveChanges(context, false);
+
+            /* By calling next() you ensure that the next BotHandler is run. */
+            await next();
+        });
     }
 }
 module.exports.FestoBot = FestoBot;
