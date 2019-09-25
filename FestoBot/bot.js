@@ -8,20 +8,26 @@ const {
 } = require('botbuilder-ai');
 var Store = require('./store');
 
-class LuisLabBot extends ActivityHandler {
+class FestoBot extends ActivityHandler {
     constructor() {
         super();
+        const endpointQnA = {
+            knowledgeBaseId: "8b28463a-ad6f-45fc-9cba-789a2d935b1f",
+            endpointKey: "4ccf2f7f-ecb6-4923-994c-8121615eca4e",
+            host: "https://festokb.azurewebsites.net/qnamaker"
+        };
+        this.qnaService = new QnAMaker(endpointQnA, {});
         this.onMessage(async (context, next) => {
-            var config = {
+            var endpointLuis = {
                 applicationId: "e3ed9236-2b5e-45ee-8eac-0f167760ee7c",
                 endpointKey: "016c1648db0c462f8fb3f682e660184d",
                 endpoint: "https://westeurope.api.cognitive.microsoft.com/luis/v2.0/apps/e3ed9236-2b5e-45ee-8eac-0f167760ee7c?verbose=true&timezoneOffset=0&subscription-key=016c1648db0c462f8fb3f682e660184d&q="
             };
 
             var recognizer = null;
-            const luisIsConfigured = config && config.applicationId && config.endpointKey && config.endpoint;
+            const luisIsConfigured = endpointLuis && endpointLuis.applicationId && endpointLuis.endpointKey && endpointLuis.endpoint;
             if (luisIsConfigured) {
-                recognizer = new LuisRecognizer(config, {}, true);
+                recognizer = new LuisRecognizer(endpointLuis, {}, true);
             }
             var recognizerResult = await recognizer.recognize(context);
             var topIntent = LuisRecognizer.topIntent(recognizerResult);
@@ -98,4 +104,4 @@ class LuisLabBot extends ActivityHandler {
         }
     }
 }
-module.exports.LuisLabBot = LuisLabBot;
+module.exports.FestoBot = FestoBot;

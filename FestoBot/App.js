@@ -4,7 +4,7 @@ require('dotenv-extended').load();
 const { BotFrameworkAdapter, InputHints } = require('botbuilder');
 
 var restify = require('restify');
-const { LuisLabBot } = require('./bot');
+const { FestoBot: FestoBot } = require('./bot');
 
 // Create HTTP server
 const server = restify.createServer();
@@ -30,7 +30,7 @@ adapter.onTurnError = async (context, error) => {
 };
 
 // Create bot
-const bot = new LuisLabBot();
+const bot = new FestoBot();
 
 // Listen for incoming activities and route them to your bot main dialog.
 server.post('/api/messages', (req, res) => {
