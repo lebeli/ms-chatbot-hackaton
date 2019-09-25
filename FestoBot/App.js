@@ -1,7 +1,7 @@
 // This loads the environment variables from the .env file
 require("dotenv-extended").load();
 
-const { BotFrameworkAdapter, InputHints } = require("botbuilder");
+const { BotFrameworkAdapter, ConversationState, InputHints, MemoryStorage, UserState } = require("botbuilder");
 
 var restify = require("restify");
 const { FestoBot } = require("./bot");
@@ -29,8 +29,13 @@ adapter.onTurnError = async (context, error) => {
     await context.sendActivity(onTurnErrorMessage, onTurnErrorMessage, InputHints.ExpectingInput);
 };
 
+// A bot requires a state store to persist the dialog and user state between messages.
+const memoryStorage = new MemoryStorage();
+let conversationState = new ConversationState(memoryStorage);
+let userState = new UserState(memoryStorage);
+
 // Create bot
-const bot = new FestoBot();
+const bot = new FestoBot(conversationState, userState);
 
 // Listen for incoming activities and route them to your bot main dialog.
 server.post("/api/messages", (req, res) => {
