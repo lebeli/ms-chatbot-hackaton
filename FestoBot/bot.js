@@ -13,9 +13,9 @@ class LuisLabBot extends ActivityHandler {
         super();
         this.onMessage(async (context, next) => {
             var config = {
-                applicationId: "30be4bd8-d62d-45cf-b253-6fd1658d475d",
-                endpointKey: "95866d1b04244934899cc84729cc7c4c",
-                endpoint: "https://westeurope.api.cognitive.microsoft.com/luis/v2.0/apps/30be4bd8-d62d-45cf-b253-6fd1658d475d?verbose=true&timezoneOffset=0&subscription-key=95866d1b04244934899cc84729cc7c4c&q="
+                applicationId: "e3ed9236-2b5e-45ee-8eac-0f167760ee7c",
+                endpointKey: "016c1648db0c462f8fb3f682e660184d",
+                endpoint: "https://westeurope.api.cognitive.microsoft.com/luis/v2.0/apps/e3ed9236-2b5e-45ee-8eac-0f167760ee7c?verbose=true&timezoneOffset=0&subscription-key=016c1648db0c462f8fb3f682e660184d&q="
             };
 
             var recognizer = null;
@@ -29,23 +29,7 @@ class LuisLabBot extends ActivityHandler {
                 topIntent = "None";
             }
             switch (topIntent) {
-                case 'SearchHotels':
-                    var response = this.searchForHotelsAction(recognizerResult.entities);
-                    if (response != null) {
-                        await context.sendActivity(response);
-                    } else {
-                        await context.sendActivity("Missing data about the hotel");
-                    }
-                    break;
-                case 'ShowHotelsReviews':
-                    var response = this.showHotelReviewsAction(recognizerResult.entities);
-                    if (response != null) {
-                        await context.sendActivity(response);
-                    } else {
-                        await context.sendActivity("Missing data about the hotel");
-                    }
-                    break;
-                case 'Help':
+                case 'help':
                     await context.sendActivity(`Happy to help you '${topIntent}'`);
                 case 'None':
                 default:
