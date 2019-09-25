@@ -46,13 +46,8 @@ class FestoBot extends ActivityHandler {
                 // #TODO
                 break;
             case "QnAMaker": {
-                const result = await this.searchKnowledgeBase(context);
-                if (result.length) {
-                    console.log(result);
-                    await context.sendActivity(result[0].answer);
-                } else {
-                    await context.sendActivity("I cannot answer your question.");
-                }
+                const resultArray = await this.getTop5QnAMakerResults(context);
+                await this.qnaMakerDialog(context, resultArray);
                 break;
             }
             default:
@@ -73,16 +68,24 @@ class FestoBot extends ActivityHandler {
             await next();
         });
 
-        this.searchKnowledgeBase = async function (context) {
-            var qnaResult = await this.qnaService.getAnswers(context);
-            return qnaResult;
-            // console.log(context);
-            // if (qnaResult.length) {
-            //     await context.sendActivity(qnaResult[0].answer);
-            // } else {
-            //     await context.sendActivity("I cannot answer your question.");
-            // }
-            // await next();
+        this.getTop5QnAMakerResults = async function (context) {
+            var qnaMakerOptions = {
+                ScoreThreshold: 0.0, // Default is 0.3
+                Top: 5 // Get 5 best answers
+            };
+            var result = await this.qnaService.getAnswers(context, qnaMakerOptions);
+            return result;
+        };
+
+        this.qnaMakerDialog = async function (context, resultArray) {
+            if (resultArray.length) { // If > 0 possible answers exist
+                // Display top1 answer
+                await context.sendActivity("Take a look at article: " + resultArray[0].answer);
+
+                await context.sendActivity("Did this answer solve your problem?");
+            } else { // Handle no results from QnA Maker
+                await context.sendActivity("Sorry, no answers in our database matched your question. Try to adjust the question. If you want to create a support ticket, type 'ticket'.");
+            }
         };
     }
 }
