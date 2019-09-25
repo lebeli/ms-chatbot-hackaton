@@ -1,106 +1,67 @@
 const { InputHints, MessageFactory } = require('botbuilder');
-const { ComponentDialog, WaterfallDialog,
+const { ComponentDialog, WaterfallDialog, DialogSet, DialogTurnStatus,
     TextPrompt, ChoicePrompt,
     ChoiceFactory, ListStyle } = require('botbuilder-dialogs');
 
-const TEXT_PROMPT = 'textPrompt';
-const CHOICE_PROMPT = 'choicePrompt';
+const ROOT_DIALOG_ID = 'ROOT_DIALOG_ID';
+const COMPANY_ID_PROMPT = 'COMPANY_ID_PROMPT';
+const TITLE_PROMPT = 'TITLE_PROMPT'
+const CONTENT_PROMPT = 'CONTENT_PROMPT';
+const VERIFY_TICKET = 'VERIFY_TICKET';
+const TICKET_STATE = 'TICKET_STATE';
 
-const DELETE_PRODUCT_ID = "deleteProductId";
-const ADD_PRODUCT_ID = "addProductId";
-const MANAGE_PRODUCTS_DIALOG_ID = "manageProductsDialog";
-const ROOT_DIALOG_ID = "rootDialogId";
 
 
 class TicketDialog extends ComponentDialog {
-    constructor(dialogState) {
+    constructor(userState) {
         super(ROOT_DIALOG_ID);
 
-        this.dialogState = dialogState;
+        // wir haben einen User Context
+        console.log(userState);
+        // zusätzlich einen neuen Context, extra für die Ticket-Erstellung
+        this.userProfile = userState.createProperty(TICKET_STATE);
 
-       /* this.addDialog(new WaterfallDialog(MANAGE_PRODUCTS_DIALOG_ID, [
-            this.showActions.bind(this),
-            this.processActionSelection.bind(this),
-            this.restartDialog.bind(this)]))
-            .addDialog(new TextPrompt(TEXT_PROMPT))
-            .addDialog(new ChoicePrompt(CHOICE_PROMPT))
-             .addDialog(new WaterfallDialog(ADD_PRODUCT_ID, [
-                async (step) => {
-                    return await step.endDialog();
-                }
-            ])) 
-            .addDialog(new AddProductDialog(dialogState))
-            .addDialog(new WaterfallDialog(DELETE_PRODUCT_ID, [
-                this.chooseProductStep.bind(this),
-                this.deleteProductStep.bind(this)
-            ]));
-            */
-           this.addDialog(new TextPrompt(TEXT_PROMPT));
-           
 
-        //this.initialDialogId = MANAGE_PRODUCTS_DIALOG_ID;
+
+        this.addDialog(new TextPrompt(COMPANY_ID_PROMPT));
+        this.addDialog(new TextPrompt(TITLE_PROMPT));
+        this.addDialog(new TextPrompt(CONTENT_PROMPT));
+
+        this.addDialog(new WaterfallDialog(ROOT_DIALOG_ID, [
+            this.companyIdPrompt.bind(this)
+            ]
+        ));
+
+        this.initialDialogId = ROOT_DIALOG_ID;
     }
 
-    async chooseProductStep(step) {
-        const msg = MessageFactory.text('Which product you want?', '', InputHints.ExpectingInput);
-        return await step.prompt(TEXT_PROMPT, { prompt: msg });
-    }
 
-    async addProductStep(step) {
-        var product = step.result;
+    async run(turnContext, accessor) {
+        const dialogSet = new DialogSet(accessor);
+        dialogSet.add(this);
 
-        /* Adding product to the state */
-        var basket = await this.getBasket(step.context);
-        basket.products.push(product);
-
-        await step.context.sendActivity("Added to basket: " + product);
-
-        return await step.endDialog();
-    }
-
-    async deleteProductStep(step) {
-        var product = step.result;
-
-        /* Removing product to the state */
-        var basket = await this.getBasket(step.context);
-        basket.products = basket.products.filter(e => e !== product);
-
-        await step.context.sendActivity("Removed from basket: " + product);
-
-        return await step.endDialog();
-    }
-
-    async showActions(step) {
-        return await step.prompt(CHOICE_PROMPT, {
-            prompt: 'Do you want to:',
-            choices: ChoiceFactory.toChoices(['Add product', 'Remove Product', 'List products', 'Nothing']),
-            style: ListStyle.heroCard
-        });
-    }
-
-    async processActionSelection(step) {
-        switch (step.result.value) {
-            case 'Add product':
-                return await step.beginDialog(ADD_PRODUCT_ID);
-            case 'Remove Product':
-                return await step.beginDialog(DELETE_PRODUCT_ID);
-            case 'List products':
-                {
-                    var basket = await this.getBasket(step.context);
-                    var productsLines = "Empty";
-                    if (basket.products && basket.products.length) {
-                        productsLines = basket.products.join("\r\n");
-                    }
-                    await step.context.sendActivity("Products list : \n\n" + productsLines);
-                    return await step.next();
-                }
-            case 'Nothing':
-                await step.context.sendActivity("Ok, just say anything to start the dialog again");
-                return await step.endDialog();
+        const dialogContext = await dialogSet.createContext(turnContext);
+        const results = await dialogContext.continueDialog();
+        if (results.status === DialogTurnStatus.empty) {
+            await dialogContext.beginDialog(this.id );
         }
-        await step.context.sendActivity("Incorrect choice");
-        return await step.next();
     }
+
+    async companyIdPrompt(step) {
+        step.values.companyid = await step.prompt(this.COMPANY_ID_PROMPT, "Please enter your company ID.");
+    }
+
+
+    async confirmStep(step) {
+        step.values.age = step.result;
+
+        // We can send messages to the user at any point in the WaterfallStep.
+        await step.context.sendActivity("Is this the correct ticket?");
+
+        // WaterfallStep always finishes with the end of the Waterfall or with another dialog, here it is a Prompt Dialog.
+        return await step.prompt(CONFIRM_PROMPT, { prompt: 'Is this okay?' });
+    }
+
 
     async restartDialog(step) {
         return await step.replaceDialog(MANAGE_PRODUCTS_DIALOG_ID);

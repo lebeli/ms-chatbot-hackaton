@@ -22,8 +22,8 @@ class FestoBot extends ActivityHandler {
         this.qnaService = new QnAMaker(endpointQnA, {});
         this.conversationState = conversationState;
         this.userState = userState;
-        this.dialogState = conversationState.createProperty('DialogState');
-    
+
+
         
 
         this.onMessage(async (context, next) => {
@@ -33,24 +33,46 @@ class FestoBot extends ActivityHandler {
                 endpoint: "https://westeurope.api.cognitive.microsoft.com/luis/v2.0/apps/e3ed9236-2b5e-45ee-8eac-0f167760ee7c?verbose=true&timezoneOffset=0&subscription-key=7719b427d93d4fdd9722766c75b85f3e&q="
             };
 
-            var recognizer = null;
+            let recognizer = null;
             const luisIsConfigured = endpointLuis && endpointLuis.applicationId && endpointLuis.endpointKey && endpointLuis.endpoint;
             if (luisIsConfigured) {
                 recognizer = new LuisRecognizer(endpointLuis, {}, true);
             }
-            var recognizerResult = await recognizer.recognize(context);
+            let recognizerResult = await recognizer.recognize(context);
             var topIntent = LuisRecognizer.topIntent(recognizerResult);
             if (!topIntent || topIntent == "") {
                 topIntent = "None";
             }
 
-            switch (topIntent) {
+            //switch (topIntent) {
+                // for dev purpose, always CreateTicket
+            switch ('CreateTicket') {
                 case 'help':
                     await context.sendActivity(`Happy to help you '${topIntent}'`);
                     break;
                 case 'CreateTicket':
-                    this.ticketDialog = new TicketDialog(this.dialogState);
-                    this.ticketDialog.add(this.dialog);
+
+                    // wir erstellen einen ticketdialog
+                    this.ticketDialog = new TicketDialog(this.userState);
+
+                    //erstelle property, in dem wir unseren dialog-Status absichern
+                    this.dialogState = this.conversationState.createProperty('DialogState');
+                    //jetzt müssen wir ein ticket starten
+                    await this.ticketDialog.run(context, this.dialogState);
+
+                    // jetzt erstellen wir einen dialogset, der alle anderen dialoge kapselt
+                    const dialogSet = new DialogSet(dialogState);
+
+
+                    dialogSet.add(this);
+
+                    const dialogContext = await dialogSet.createContext(turnContext);
+                    const results = await dialogContext.continueDialog();
+                    if (results.status === DialogTurnStatus.empty) {
+                        await dialogContext.beginDialog(this.id);
+                    }
+
+                    await next();
                     break;
                 case 'ContactHelpdesk':
                     // #TODO
@@ -83,6 +105,7 @@ class FestoBot extends ActivityHandler {
             } /* By calling next() you ensure that the next BotHandler is run. */
             await next();
         });
+
         this.searchKnowledgeBase = async function(context) {
             var qnaResult = await this.qnaService.getAnswers(context);
             return qnaResult;
