@@ -31,6 +31,7 @@ class FestoBot extends ActivityHandler {
         // store for dialog and user state
         this.conversationState = conversationState;
         this.userState = userState;
+        // store information within a dialog -> example for storage: this.dialogState.userName = "Franz Franzhausen"
         this.dialogState = conversationState.createProperty("DialogState");
         this.qnaDialog = new QnADialog(this.dialogState);
         this.ticketDialog = new TicketDialog(this.dialogState);
@@ -67,7 +68,9 @@ class FestoBot extends ActivityHandler {
                 topIntent = "None";
             }
 
+            // dialog context starts or continues dialogs in a dialog set
             let dialogContext = await this.dialogSet.createContext(context);
+            // contains information from the dialog to store it if needed
             let results = await dialogContext.continueDialog();
 
             switch (topIntent) {
@@ -98,6 +101,8 @@ class FestoBot extends ActivityHandler {
                 // Run the Dialog with the new message Activity.
                 // Shout be outside the switch statement. Cases just for dialog stack management
                 if (results.status === DialogTurnStatus.empty) {
+                    // persist initial question
+                    this.dialogState.question = context.activity.text;
                     await dialogContext.beginDialog(this.qnaDialog.id);
                 }
                 break;
@@ -115,7 +120,7 @@ class FestoBot extends ActivityHandler {
             const membersAdded = context.activity.membersAdded;
             for (let cnt = 0; cnt < membersAdded.length; ++cnt) {
                 if (membersAdded[cnt].id !== context.activity.recipient.id) {
-                    await context.sendActivity("Hello and welcome!");
+                    await context.sendActivity("Hi, How can i help you with your IT problem?");
                 }
             } /* By calling next() you ensure that the next BotHandler is run. */
             await next();

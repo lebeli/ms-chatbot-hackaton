@@ -15,6 +15,8 @@ const ROOT_DIALOG_ID = "rootQnAId"; // purpose?
 
 class QnADialog extends ComponentDialog {
     constructor (dialogState) {
+        // dialogState to save information
+        // step = dialogContext in bot.js for dialog flow controll
         super(ROOT_DIALOG_ID);
 
         const endpointQnA = {
@@ -24,7 +26,6 @@ class QnADialog extends ComponentDialog {
         };
         this.qnaService = new QnAMaker(endpointQnA, {});
 
-        this.resultArray = 0;
         this.dialogState = dialogState;
 
         this.addDialog(new WaterfallDialog(QNA_PRODUCTS_DIALOG_ID, [
@@ -131,6 +132,7 @@ class QnADialog extends ComponentDialog {
             const resultArray = this.resultArray;
             if (resultArray.length === 0) {
                 await step.context.sendActivity("Thats all, please create a ticket");
+                step.beginDialog("TICKET_ID");
                 return step.endDialog();
             }
 
