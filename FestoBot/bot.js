@@ -52,8 +52,8 @@ class FestoBot extends ActivityHandler {
         this.onMessage(async (context, next) => {
             var endpointLuis = {
                 applicationId: "e3ed9236-2b5e-45ee-8eac-0f167760ee7c",
-                endpointKey: "7719b427d93d4fdd9722766c75b85f3e",
-                endpoint: "https://westeurope.api.cognitive.microsoft.com/luis/v2.0/apps/e3ed9236-2b5e-45ee-8eac-0f167760ee7c?verbose=true&timezoneOffset=0&subscription-key=7719b427d93d4fdd9722766c75b85f3e&q="
+                endpointKey: "95866d1b04244934899cc84729cc7c4c",
+                endpoint: "https://westeurope.api.cognitive.microsoft.com/luis/v2.0/apps/e3ed9236-2b5e-45ee-8eac-0f167760ee7c?verbose=true&timezoneOffset=0&subscription-key=95866d1b04244934899cc84729cc7c4c&q="
             };
 
             let recognizer = null;
@@ -120,17 +120,6 @@ class FestoBot extends ActivityHandler {
             } /* By calling next() you ensure that the next BotHandler is run. */
             await next();
         });
-        this.searchKnowledgeBase = async function (context) {
-            var qnaResult = await this.qnaService.getAnswers(context);
-            return qnaResult;
-            // console.log(context);
-            // if (qnaResult.length) {
-            //     await context.sendActivity(qnaResult[0].answer);
-            // } else {
-            //     await context.sendActivity("I cannot answer your question.");
-            // }
-            // await next();
-        };
         this.onDialog(async (context, next) => {
             /* Save any state changes. The load happened during the execution of the Dialog. */
             await this.conversationState.saveChanges(context, false);
@@ -139,19 +128,6 @@ class FestoBot extends ActivityHandler {
             /* By calling next() you ensure that the next BotHandler is run. */
             await next();
         });
-
-        /*
-        this.qnaMakerDialog = async function (context, resultArray) {
-            if (resultArray.length) { // If > 0 possible answers exist
-                // Display top1 answer
-                await context.sendActivity("Take a look at article: " + resultArray[0].answer);
-
-                await context.sendActivity("Did this answer solve your problem?");
-            } else { // Handle no results from QnA Maker
-                await context.sendActivity("Sorry, no answers in our database matched your question. Try to adjust the question. If you want to create a support ticket, type 'ticket'.");
-            }
-        };
-        */
     }
 }
 module.exports.FestoBot = FestoBot;
