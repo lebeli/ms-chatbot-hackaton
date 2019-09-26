@@ -4,6 +4,7 @@ const {
     TextPrompt, ChoicePrompt,
     ChoiceFactory, ListStyle
 } = require("botbuilder-dialogs");
+const { QnAMaker } = require("botbuilder-ai");
 
 const TEXT_PROMPT = "textPrompt";
 const CHOICE_PROMPT = "choicePrompt";
@@ -13,6 +14,13 @@ const ROOT_DIALOG_ID = "rootQnAId"; // purpose?
 class QnADialog extends ComponentDialog {
     constructor (dialogState) {
         super(ROOT_DIALOG_ID);
+
+        const endpointQnA = {
+            knowledgeBaseId: "8b28463a-ad6f-45fc-9cba-789a2d935b1f",
+            endpointKey: "4ccf2f7f-ecb6-4923-994c-8121615eca4e",
+            host: "https://festokb.azurewebsites.net/qnamaker"
+        };
+        this.qnaService = new QnAMaker(endpointQnA, {});
 
         this.resultArray = 0;
         this.dialogState = dialogState;
@@ -71,15 +79,14 @@ class QnADialog extends ComponentDialog {
         return step.replaceDialog(QNA_PRODUCTS_DIALOG_ID);
     }
 
-    async getBasket (context) {
-        var basket = await this.dialogState.get(context, {});
-
-        if (!basket.products) {
-            basket.products = [];
-        }
-
-        return basket;
-    }
+    async getTop5QnAMakerResults (context) {
+        var qnaMakerOptions = {
+            ScoreThreshold: 0.0, // Default is 0.3
+            Top: 5 // Get 5 best answers
+        };
+        var result = await this.qnaService.getAnswers(context, qnaMakerOptions);
+        return result;
+    };
 }
 
 module.exports.QnADialog = QnADialog;
