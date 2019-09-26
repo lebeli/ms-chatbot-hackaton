@@ -4,7 +4,7 @@ require('dotenv-extended').load();
 const { BotFrameworkAdapter, ConversationState, InputHints, MemoryStorage, UserState } = require('botbuilder');
 
 var restify = require('restify');
-const { FestoBot: FestoBot } = require('./bot');
+const { FestoBot: FestoBot } = require('./bot')
 
 // Create HTTP server
 const server = restify.createServer();
