@@ -30,11 +30,10 @@ class FestoBot extends ActivityHandler {
         this.userState = userState;
         this.dialogState = conversationState.createProperty("DialogState");
         this.qnaDialog = new QnADialog(this.dialogState);
-        this.ticketDialog = new TicketDialog(this.userState);
+        this.ticketDialog = new TicketDialog(this.dialogState);
         this.dialogSet = new DialogSet(this.dialogState);
         this.dialogSet.add(this.qnaDialog); // TODO: add further dialogs for tickets etc.
         this.dialogSet.add(this.ticketDialog);
-        this.luisToggle = true;
 
         const endpointQnA = {
             knowledgeBaseId: "8b28463a-ad6f-45fc-9cba-789a2d935b1f",
@@ -72,12 +71,13 @@ class FestoBot extends ActivityHandler {
                 break;
             case "CreateTicket":
                 // jetzt müssen wir ein ticket starten
-                await this.ticketDialog.run(context, this.dialogState);
+                // await this.ticketDialog.run(context, this.dialogState);
 
                 // const dialogContext = await dialogSet.createContext(turnContext);
                 // const results = await dialogContext.continueDialog();
                 if (results.status === DialogTurnStatus.empty) {
-                    await dialogContext.beginDialog(this.id);
+                    const text = "CREATE_TICKET";
+                    await dialogContext.beginDialog(text);
                 }
 
                 await next();

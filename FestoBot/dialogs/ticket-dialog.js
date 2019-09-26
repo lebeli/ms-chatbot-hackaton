@@ -4,7 +4,7 @@ const {
 } = require("botbuilder");
 */
 const {
-    ComponentDialog, WaterfallDialog, DialogSet, DialogTurnStatus,
+    ComponentDialog, WaterfallDialog,
     TextPrompt
 } = require("botbuilder-dialogs");
 
@@ -12,30 +12,33 @@ const ROOT_DIALOG_ID = "ROOT_TICKET_ID";
 const COMPANY_ID_PROMPT = "COMPANY_ID_PROMPT";
 const TITLE_PROMPT = "TITLE_PROMPT";
 const CONTENT_PROMPT = "CONTENT_PROMPT";
+const CREATE_TICKET = "CREATE_TICKET";
 // const VERIFY_TICKET = "VERIFY_TICKET";
-const TICKET_STATE = "TICKET_STATE";
+// const TICKET_STATE = "TICKET_STATE";
 
 class TicketDialog extends ComponentDialog {
     constructor (userState) {
         super(ROOT_DIALOG_ID);
 
         // wir haben einen User Context
-        console.log(userState);
+        // console.log(userState);
         // zusätzlich einen neuen Context, extra für die Ticket-Erstellung
-        this.userProfile = userState.createProperty(TICKET_STATE);
+        // this.userProfile = userState.createProperty(TICKET_STATE);
 
         this.addDialog(new TextPrompt(COMPANY_ID_PROMPT));
         this.addDialog(new TextPrompt(TITLE_PROMPT));
         this.addDialog(new TextPrompt(CONTENT_PROMPT));
 
-        this.addDialog(new WaterfallDialog(ROOT_DIALOG_ID, [
+        this.addDialog(new WaterfallDialog(CREATE_TICKET, [
             this.companyIdPrompt.bind(this)
         ]
         ));
 
-        this.initialDialogId = ROOT_DIALOG_ID;
+        // this.initialDialogId = ROOT_DIALOG_ID;
+        this.initialDialogId = CREATE_TICKET;
     }
 
+    /*
     async run (turnContext, accessor) {
         const dialogSet = new DialogSet(accessor); // TODO 1.
         dialogSet.add(this);
@@ -46,6 +49,7 @@ class TicketDialog extends ComponentDialog {
             await dialogContext.beginDialog(this.id);
         }
     }
+    */
 
     async companyIdPrompt (step) {
         step.values.companyid = await step.prompt(this.COMPANY_ID_PROMPT, "Please enter your company ID.");
