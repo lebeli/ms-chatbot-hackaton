@@ -25,7 +25,7 @@ adapter.onTurnError = async (context, error) => {
     console.error(`\n [onTurnError]: ${error}`);
     // Send a message to the user
     const onTurnErrorMessage = "Sorry, it looks like something went wrong!";
-    await context.sendActivity(onTurnErrorMessage, onTurnErrorMessage, InputHints.ExpectingInput);
+    // await context.sendActivity(onTurnErrorMessage, onTurnErrorMessage, InputHints.ExpectingInput);
 };
 /* For local development, in-memory storage is used. */
 // A bot requires a state store to persist the dialog and user state between messages.

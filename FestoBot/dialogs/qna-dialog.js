@@ -125,7 +125,7 @@ class QnADialog extends ComponentDialog {
     async processActionSelection (step) {
         switch (step.result.value) {
         case "Yes":
-            await step.context.sendActivity("Yasss!");
+            await step.context.sendActivity("Great, can I help you with anything else?");
             return step.endDialog();
         case "No, show me more results": 
             const resultArray = this.resultArray;
