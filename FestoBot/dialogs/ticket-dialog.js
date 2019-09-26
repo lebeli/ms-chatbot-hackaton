@@ -1,94 +1,100 @@
-// const { InputHints, MessageFactory } = require("botbuilder");
-const {
-    ComponentDialog, WaterfallDialog,
-    TextPrompt, ChoicePrompt,
-    ChoiceFactory, ListStyle
-} = require("botbuilder-dialogs");
-const { QnAMaker } = require("botbuilder-ai");
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
-const TEXT_PROMPT = "textPrompt";
-const CHOICE_PROMPT = "choicePrompt";
-const QNA_PRODUCTS_DIALOG_ID = "qnaDialog";
+const {
+    ChoiceFactory,
+    ChoicePrompt,
+    ComponentDialog,
+    ConfirmPrompt,
+    DialogSet,
+    DialogTurnStatus,    
+    TextPrompt,
+    WaterfallDialog
+} = require("botbuilder-dialogs");
+
+const TICKET_WATERFALL_DIALOG = "TICKET_WATERFALL_DIALOG";
 const ROOT_DIALOG_ID = "TICKET_ID"; // purpose?
 
+const COMPANY_ID_PROMPT = "COMPANY_ID_PROMPT";
+const TITLE_PROMPT = "TITLE_PROMPT";
+const CONTENT_PROMPT = "CONTENT_PROMPT";
+// const CREATE_TICKET = "CREATE_TICKET";
+const CONFIRM_PROMPT = "CONFIRM_PROMPT";
+
 class TicketDialog extends ComponentDialog {
-    constructor (dialogState) {
+    constructor (userState) {
         super(ROOT_DIALOG_ID);
 
-        const endpointQnA = {
-            knowledgeBaseId: "8b28463a-ad6f-45fc-9cba-789a2d935b1f",
-            endpointKey: "4ccf2f7f-ecb6-4923-994c-8121615eca4e",
-            host: "https://festokb.azurewebsites.net/qnamaker"
-        };
-        this.qnaService = new QnAMaker(endpointQnA, {});
+        // this.userProfile = userState.createProperty(USER_PROFILE);
 
-        this.resultArray = 0;
-        this.dialogState = dialogState;
+        this.addDialog(new TextPrompt(COMPANY_ID_PROMPT));
+        this.addDialog(new TextPrompt(TITLE_PROMPT));
+        this.addDialog(new TextPrompt(CONTENT_PROMPT));
+        this.addDialog(new ConfirmPrompt(CONFIRM_PROMPT));
 
-        this.addDialog(new WaterfallDialog(QNA_PRODUCTS_DIALOG_ID, [
-            this.presentResult.bind(this),
-            this.rightDocument.bind(this),
-            this.processActionSelection.bind(this),
-            this.restartDialog.bind(this)]))
-            .addDialog(new TextPrompt(TEXT_PROMPT))
-            .addDialog(new ChoicePrompt(CHOICE_PROMPT));
+        this.addDialog(new WaterfallDialog(TICKET_WATERFALL_DIALOG, [
+            this.companyStep.bind(this),
+            this.titleStep.bind(this),
+            this.contentStep.bind(this),
+            this.confirmStep.bind(this)
+        ]));
 
-        this.initialDialogId = QNA_PRODUCTS_DIALOG_ID;
+        this.initialDialogId = TICKET_WATERFALL_DIALOG;
     }
 
-    async presentResult (step) {
-        // return await step.prompt(TEXT_PROMPT, { prompt: "I found this document: " + this.top5Result });
-        /*
-        const resultArray = await this.getTop5QnAMakerResults(step.context);
-        const attachment = {
-            name: "PDF",
-            contentType: "application/pdf",
-            contentUrl: "D:\\chatbot\festo\\" + resultArray[0].answer
-        };
-        await step.context.sendActivity({
-            text: "I found this document:",
-            attachments: [attachment]
-        });
-        */
+    /**
+     * The run method handles the incoming activity (in the form of a TurnContext) and passes it through the dialog system.
+     * If no dialog is active, it will start the default dialog.
+     * @param {*} turnContext
+     * @param {*} accessor
+     */
+    async run (turnContext, accessor) {
+        const dialogSet = new DialogSet(accessor);
+        dialogSet.add(this);
 
-        // const resultArray = await this.getTop5QnAMakerResults(step.context);
-        // await step.context.sendActivity("I found this document: " + resultArray[0].answer);
-        return step.next();
-    }
-
-    async rightDocument (step) {
-        return step.prompt(CHOICE_PROMPT, {
-            prompt: "Is the document helpful:",
-            choices: ChoiceFactory.toChoices(["Yes", "No"]),
-            style: ListStyle.list
-        });
-    }
-
-    async processActionSelection (step) {
-        switch (step.result.value) {
-        case "Yes":
-            await step.context.sendActivity("Yasss!");
-            return step.endDialog();
-        case "No":
-            await step.context.sendActivity("Too bad!");
-            return step.endDialog();
+        const dialogContext = await dialogSet.createContext(turnContext);
+        const results = await dialogContext.continueDialog();
+        if (results.status === DialogTurnStatus.empty) {
+            await dialogContext.beginDialog(this.id);
         }
-        await step.context.sendActivity("Incorrect choice");
-        return step.next();
     }
 
-    async restartDialog (step) {
-        return step.replaceDialog(QNA_PRODUCTS_DIALOG_ID);
+
+    async companyStep (step) {
+        return step.prompt(COMPANY_ID_PROMPT, "What is your company id?");
     }
 
-    async getTop5QnAMakerResults (context) {
-        var qnaMakerOptions = {
-            ScoreThreshold: 0.0, // Default is 0.3
-            Top: 5 // Get 5 best answers
-        };
-        var result = await this.qnaService.getAnswers(context, qnaMakerOptions);
-        return result;
-    };
+    async titleStep (step) {
+        this.ticket = {};
+        this.ticket.companyid = step.result;
+
+        // We can send messages to the user at any point in the WaterfallStep.
+        // await step.context.sendActivity(`Thanks ${step.result}.`);
+
+        // WaterfallStep always finishes with the end of the Waterfall or with another dialog; here it is a Prompt Dialog.
+        return step.prompt(TITLE_PROMPT, "Please enter your ticket title:");
+    }
+
+    async contentStep (step) {
+        // ticket title
+        this.ticket.title = step.result;
+
+        // We can send messages to the user at any point in the WaterfallStep.
+        // await step.context.sendActivity(`Thanks ${step.result}.`);
+
+        // WaterfallStep always finishes with the end of the Waterfall or with another dialog; here it is a Prompt Dialog.
+        return step.prompt(TITLE_PROMPT, "Please describe your ticket as detailed as possible:");
+    }
+
+    async confirmStep (step) {
+        // get ticket - content from previous step
+        this.ticket.content = step.result;
+        // We can send messages to the user at any point in the WaterfallStep.
+        // await step.context.sendActivity("");
+
+        // WaterfallStep always finishes with the end of the Waterfall or with another dialog, here it is a Prompt Dialog.
+        return step.prompt(CONFIRM_PROMPT, { prompt: "Is this okay?" });
+    }
 }
 
 module.exports.TicketDialog = TicketDialog;
