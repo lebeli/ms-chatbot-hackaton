@@ -32,13 +32,12 @@ class HelpDialog extends ComponentDialog {
         this.addDialog(new NumberPrompt(NUMBER_PROMPT, this.agePromptValidator));
 
         this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
-            this.helpStep.bind(this)
-            // this.transportStep.bind(this),
-            // this.nameStep.bind(this),
-            // this.nameConfirmStep.bind(this),
-            // this.ageStep.bind(this),
-            // this.confirmStep.bind(this),
-            // this.summaryStep.bind(this)
+            this.transportStep.bind(this),
+            this.nameStep.bind(this),
+            this.nameConfirmStep.bind(this),
+            this.ageStep.bind(this),
+            this.confirmStep.bind(this),
+            this.summaryStep.bind(this)
         ]));
 
         this.initialDialogId = WATERFALL_DIALOG;
@@ -59,13 +58,6 @@ class HelpDialog extends ComponentDialog {
         if (results.status === DialogTurnStatus.empty) {
             await dialogContext.beginDialog(this.id);
         }
-    }
-
-    async helpStep (step) {
-        return step.prompt(CHOICE_PROMPT, {
-            prompt: "Hi, I'm a Bot and trying to assist you with your Problems!",
-            choices: ChoiceFactory.toChoices(["Create a Ticket", "Search the Knowledge", "Quit"])
-        });
     }
 
     async transportStep (step) {

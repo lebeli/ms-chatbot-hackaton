@@ -1,0 +1,63 @@
+{
+    "type": "AdaptiveCard",
+    "body": [
+        {
+            "type": "TextBlock",
+            "size": "Medium",
+            "weight": "Bolder",
+            "text": "Ticket"
+        },
+        {
+            "type": "TextBlock",
+            "text": "Here you have the option to review your Ticket:",
+            "wrap": true
+        },
+        {
+            "type": "TextBlock",
+            "text": "Commpany ID"
+        },
+        {
+            "type": "Input.Text",
+            "title": "New Input.Toggle",
+            "placeholder": "Id",
+            "id": "companyID"
+        },
+        {
+            "type": "TextBlock",
+            "text": "Title"
+        },
+        {
+            "type": "Input.Text",
+            "title": "New Input.Toggle",
+            "placeholder": "Title",
+            "$data": "",
+            "id": "titleID"
+        },
+        {
+            "type": "TextBlock",
+            "text": "Message"
+        },
+        {
+            "type": "Input.Text",
+            "title": "New Input.Toggle",
+            "placeholder": "Your Message",
+            "id": "messageID"
+        },
+        {
+            "type": "ActionSet",
+            "actions": [
+                {
+                    "type": "Action.Submit",
+                    "title": "Submit"
+                },
+                {
+                    "type": "Action.ToggleVisibility",
+                    "title": "Cancel",
+                    "targetElements": []
+                }
+            ]
+        }
+    ],
+    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+    "version": "1.0"
+}
