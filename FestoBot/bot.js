@@ -5,33 +5,35 @@ const {
 } = require("botbuilder");
 const {
     LuisRecognizer
-} = require('botbuilder-ai');
-var Store = require('./store');
+} = require("botbuilder-ai");
+// var Store = require("./store");
 const {
     QnAMaker
-} = require('botbuilder-ai');
+} = require("botbuilder-ai");
 const {
     TicketDialog
-} = require('./dialogs/ticket-dialog');
+} = require("./dialogs/ticket-dialog");
 const {
     DialogSet,
     DialogTurnStatus
-} = require('botbuilder-dialogs');
+} = require("botbuilder-dialogs");
 const {
     QnADialog
-} = require('./dialogs/qna-dialog');
+} = require("./dialogs/qna-dialog");
 
 class FestoBot extends ActivityHandler {
-    constructor(conversationState, userState) {
+    constructor (conversationState, userState) {
         super();
 
         // store for dialog and user state
         this.conversationState = conversationState;
         this.userState = userState;
-        this.dialogState = conversationState.createProperty('DialogState');
+        this.dialogState = conversationState.createProperty("DialogState");
         this.qnaDialog = new QnADialog(this.dialogState);
+        this.ticketDialog = new TicketDialog(this.userState);
         this.dialogSet = new DialogSet(this.dialogState);
         this.dialogSet.add(this.qnaDialog); // TODO: add further dialogs for tickets etc.
+        this.dialogSet.add(this.ticketDialog);
         this.luisToggle = true;
 
         const endpointQnA = {
@@ -42,9 +44,6 @@ class FestoBot extends ActivityHandler {
         this.qnaService = new QnAMaker(endpointQnA, {});
         this.conversationState = conversationState;
         this.userState = userState;
-
-
-
 
         this.onMessage(async (context, next) => {
             var endpointLuis = {
@@ -58,7 +57,7 @@ class FestoBot extends ActivityHandler {
             if (luisIsConfigured) {
                 recognizer = new LuisRecognizer(endpointLuis, {}, true);
             }
-            let recognizerResult = await recognizer.recognize(context);
+            const recognizerResult = await recognizer.recognize(context);
             var topIntent = LuisRecognizer.topIntent(recognizerResult);
             if (!topIntent || topIntent === "") {
                 topIntent = "None";
@@ -68,53 +67,41 @@ class FestoBot extends ActivityHandler {
             let results = await dialogContext.continueDialog();
 
             switch (topIntent) {
-                case "help":
-                    await context.sendActivity(`Happy to help you '${topIntent}'`);
-                    break;
-                case 'CreateTicket':
+            case "help":
+                await context.sendActivity(`Happy to help you '${topIntent}'`);
+                break;
+            case "CreateTicket":
+                // jetzt müssen wir ein ticket starten
+                await this.ticketDialog.run(context, this.dialogState);
 
-                    // wir erstellen einen ticketdialog
-                    this.ticketDialog = new TicketDialog(this.userState);
-
-                    //erstelle property, in dem wir unseren dialog-Status absichern
-                    this.dialogState = this.conversationState.createProperty('DialogState');
-                    //jetzt müssen wir ein ticket starten
-                    await this.ticketDialog.run(context, this.dialogState);
-
-                    // jetzt erstellen wir einen dialogset, der alle anderen dialoge kapselt
-                    const dialogSet = new DialogSet(dialogState);
-
-
-                    dialogSet.add(this);
-
-                    const dialogContext = await dialogSet.createContext(turnContext);
-                    const results = await dialogContext.continueDialog();
-                    if (results.status === DialogTurnStatus.empty) {
-                        await dialogContext.beginDialog(this.id);
-                    }
-
-                    await next();
-                    break;
-                case "ContactHelpdesk":
-                    // #TODO
-                    break;
-                case "QnAMaker": {
-                    this.luisToggle = false;
-                    // Run the Dialog with the new message Activity.
-                    // Shout be outside the switch statement. Cases just for dialog stack management
-                    if (results.status === DialogTurnStatus.empty) {
-                        let test = await this.getTop5QnAMakerResults(context);
-                        this.qnaDialog.resultArray = test; // TODO: how to set member variable for result?
-                        await dialogContext.beginDialog(this.qnaDialog.id);
-                    }
-                    // await this.qnaMakerDialog(context, resultArray);
-                    this.luisToggle = true;
-                    break;
+                // const dialogContext = await dialogSet.createContext(turnContext);
+                // const results = await dialogContext.continueDialog();
+                if (results.status === DialogTurnStatus.empty) {
+                    await dialogContext.beginDialog(this.id);
                 }
-                default:
-                    dialogContext = await this.dialogSet.createContext(context);
-                    results = await dialogContext.continueDialog();
-                    break;
+
+                await next();
+                break;
+            case "ContactHelpdesk":
+                // #TODO
+                break;
+            case "QnAMaker": {
+                this.luisToggle = false;
+                // Run the Dialog with the new message Activity.
+                // Shout be outside the switch statement. Cases just for dialog stack management
+                if (results.status === DialogTurnStatus.empty) {
+                    const test = await this.getTop5QnAMakerResults(context);
+                    this.qnaDialog.resultArray = test; // TODO: how to set member variable for result?
+                    await dialogContext.beginDialog(this.qnaDialog.id);
+                }
+                // await this.qnaMakerDialog(context, resultArray);
+                this.luisToggle = true;
+                break;
+            }
+            default:
+                dialogContext = await this.dialogSet.createContext(context);
+                results = await dialogContext.continueDialog();
+                break;
             }
 
             await next();
@@ -139,8 +126,7 @@ class FestoBot extends ActivityHandler {
             //     await context.sendActivity("I cannot answer your question.");
             // }
             // await next();
-
-        }
+        };
         this.onDialog(async (context, next) => {
             /* Save any state changes. The load happened during the execution of the Dialog. */
             await this.conversationState.saveChanges(context, false);

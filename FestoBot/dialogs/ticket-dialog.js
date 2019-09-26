@@ -1,15 +1,18 @@
-const { InputHints, MessageFactory } = require("botbuilder");
+/*
 const {
- ComponentDialog, WaterfallDialog, DialogSet, DialogTurnStatus,
-    TextPrompt, ChoicePrompt,
-    ChoiceFactory, ListStyle 
+    InputHints, MessageFactory
+} = require("botbuilder");
+*/
+const {
+    ComponentDialog, WaterfallDialog, DialogSet, DialogTurnStatus,
+    TextPrompt
 } = require("botbuilder-dialogs");
 
-const ROOT_DIALOG_ID = "ROOT_DIALOG_ID";
+const ROOT_DIALOG_ID = "ROOT_TICKET_ID";
 const COMPANY_ID_PROMPT = "COMPANY_ID_PROMPT";
 const TITLE_PROMPT = "TITLE_PROMPT";
 const CONTENT_PROMPT = "CONTENT_PROMPT";
-const VERIFY_TICKET = "VERIFY_TICKET";
+// const VERIFY_TICKET = "VERIFY_TICKET";
 const TICKET_STATE = "TICKET_STATE";
 
 class TicketDialog extends ComponentDialog {
@@ -34,7 +37,7 @@ class TicketDialog extends ComponentDialog {
     }
 
     async run (turnContext, accessor) {
-        const dialogSet = new DialogSet(accessor);
+        const dialogSet = new DialogSet(accessor); // TODO 1.
         dialogSet.add(this);
 
         const dialogContext = await dialogSet.createContext(turnContext);
@@ -55,11 +58,11 @@ class TicketDialog extends ComponentDialog {
         await step.context.sendActivity("Is this the correct ticket?");
 
         // WaterfallStep always finishes with the end of the Waterfall or with another dialog, here it is a Prompt Dialog.
-        return await step.prompt(CONFIRM_PROMPT, { prompt: "Is this okay?" });
+        return step.prompt(this.CONFIRM_PROMPT, { prompt: "Is this okay?" });
     }
 
     async restartDialog (step) {
-        return await step.replaceDialog(MANAGE_PRODUCTS_DIALOG_ID);
+        return step.replaceDialog(this.MANAGE_PRODUCTS_DIALOG_ID);
     }
 
     async getBasket (context) {
