@@ -76,8 +76,7 @@ class FestoBot extends ActivityHandler {
                 // const dialogContext = await dialogSet.createContext(turnContext);
                 // const results = await dialogContext.continueDialog();
                 if (results.status === DialogTurnStatus.empty) {
-                    const text = "CREATE_TICKET";
-                    await dialogContext.beginDialog(text);
+                    await dialogContext.beginDialog(this.ticketDialog.id);
                 }
 
                 await next();
