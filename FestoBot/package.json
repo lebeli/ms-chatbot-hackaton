@@ -4,6 +4,7 @@
   "description": "",
   "main": "App.js",
   "dependencies": {
+    "adaptivecards": "^1.2.3",
     "botbuilder": "^4.5.3",
     "botbuilder-ai": "^4.5.3",
     "botbuilder-dialogs": "^4.5.3",

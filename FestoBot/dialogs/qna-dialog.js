@@ -4,6 +4,8 @@ const {
     TextPrompt, ChoicePrompt,
     ChoiceFactory, ListStyle
 } = require("botbuilder-dialogs");
+const { Adaptive } = require("adaptivecards");
+const { CardFactory } = require("botbuilder");
 const { QnAMaker } = require("botbuilder-ai");
 
 const TEXT_PROMPT = "textPrompt";
@@ -26,39 +28,97 @@ class QnADialog extends ComponentDialog {
         this.dialogState = dialogState;
 
         this.addDialog(new WaterfallDialog(QNA_PRODUCTS_DIALOG_ID, [
-            this.presentResult.bind(this),
+            this.presentSingleResult.bind(this),
             this.rightDocument.bind(this),
-            this.processActionSelection.bind(this),
-            this.restartDialog.bind(this)]))
+            this.processActionSelection.bind(this)]))
             .addDialog(new TextPrompt(TEXT_PROMPT))
             .addDialog(new ChoicePrompt(CHOICE_PROMPT));
 
         this.initialDialogId = QNA_PRODUCTS_DIALOG_ID;
     }
 
-    async presentResult (step) {
+    async presentSingleResult (step) {
         // return await step.prompt(TEXT_PROMPT, { prompt: "I found this document: " + this.top5Result });
-        const resultArray = await this.getTop5QnAMakerResults(step.context);
-        const attachment = {
-            name: "PDF",
-            contentType: "application/pdf",
-            contentUrl: "D:\\chatbot\\festo\\" + resultArray[0].answer + ".pdf"
-        };
+        this.resultArray = await this.getTop5QnAMakerResults(step.context);
+        if (this.resultArray.length < 1) {
+            await step.context.sendActivity("Sorry, no result, please specify your problem.");
+            return step.replaceDialog(this.dialogState.id);
+            // return step.endDialog();
+        }
+        const id = this.resultArray[0].answer;
+        this.presented = this.resultArray.shift();
+
+        const adaptiveCard = this.createAdaptiveCard(id);
+
+        const card = CardFactory.adaptiveCard(adaptiveCard);
+
         await step.context.sendActivity({
             text: "I found this document:",
-            attachments: [attachment]
+            attachments: [card]
         });
-
         // const resultArray = await this.getTop5QnAMakerResults(step.context);
         // await step.context.sendActivity("I found this document: " + resultArray[0].answer);
         return step.next();
     }
 
+    async presentMultipleResults () {
+        // return await step.prompt(TEXT_PROMPT, { prompt: "I found this document: " + this.top5Result });
+        const resultArray = this.resultArray;
+
+        // const cardArray = [];
+        const attachments = [];
+        resultArray.forEach(function (element) {
+            attachments.push({
+                name: "PDF",
+                contentType: "application/pdf",
+                contentUrl: "D:\\chatbot\festo\\" + resultArray[0].answer
+            });
+            /*
+            const id = element.answer;
+            const cardJson = this.createAdaptiveCard(id);
+            const card = CardFactory.adaptiveCard(cardJson);
+            cardArray.push(card);
+            */
+        });
+        //return cardArray;
+        await step.context.sendActivity({
+            text: "I found this document:",
+            attachments: [attachment]
+        });
+        return step.next();
+    }
+
+    createAdaptiveCard (id) {
+        return {
+            type: "AdaptiveCard",
+            version: "1.0",
+            body: [
+                {
+                    type: "TextBlock",
+                    text: "Dokument " + id
+                },
+                {
+                    type: "Image",
+                    altText: "",
+                    // url: ".\\resources\\pdf_icon.png",
+                    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/PDF_file_icon.svg/833px-PDF_file_icon.svg.png",
+                    selectAction: {
+                        type: "Action.OpenUrl",
+                        url: "D:\\chatbot\\festo\\" + id + ".pdf"
+                    },
+                    separator: true,
+                    size: "Medium"
+                }
+            ],
+            $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
+        };
+    }
+
     async rightDocument (step) {
         return step.prompt(CHOICE_PROMPT, {
-            prompt: "Is the document helpful:",
-            choices: ChoiceFactory.toChoices(["Yes", "No"]),
-            style: ListStyle.list
+            prompt: "Is the document helpful?",
+            choices: ChoiceFactory.toChoices(["Yes", "No, show me more results"]),
+            style: ListStyle.button
         });
     }
 
@@ -67,11 +127,35 @@ class QnADialog extends ComponentDialog {
         case "Yes":
             await step.context.sendActivity("Yasss!");
             return step.endDialog();
-        case "No":
-            await step.context.sendActivity("Too bad!");
-            return step.endDialog();
+        case "No, show me more results": 
+            const resultArray = this.resultArray;
+            if (resultArray.length === 0) {
+                await step.context.sendActivity("Thats all, please create a ticket");
+                return step.endDialog();
+            }
+
+            // const cardArray = [];
+            const attachments = [];
+            resultArray.forEach(function (element) {
+                attachments.push({
+                    name: "Document " + element.answer,
+                    contentType: "application/pdf",
+                    contentUrl: "D:\\chatbot\festo\\" + resultArray[0].answer
+                });
+                /*
+                const id = element.answer;
+                const cardJson = this.createAdaptiveCard(id);
+                const card = CardFactory.adaptiveCard(cardJson);
+                cardArray.push(card);
+                */
+            });
+            //return cardArray;
+            await step.context.sendActivity({
+                text: "I found this document:",
+                attachments: attachments
+            });
         }
-        await step.context.sendActivity("Incorrect choice");
+        // await step.context.sendActivity("Incorrect choice");
         return step.next();
     }
 
