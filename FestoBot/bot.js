@@ -20,6 +20,9 @@ const {
 const {
     QnADialog
 } = require("./dialogs/qna-dialog");
+const {
+    HelpDialog
+} = require("./dialogs/help-dialog");
 
 class FestoBot extends ActivityHandler {
     constructor (conversationState, userState) {
@@ -31,9 +34,11 @@ class FestoBot extends ActivityHandler {
         this.dialogState = conversationState.createProperty("DialogState");
         this.qnaDialog = new QnADialog(this.dialogState);
         this.ticketDialog = new TicketDialog(this.dialogState);
+        this.helpDialog = new HelpDialog(this.dialogState);
         this.dialogSet = new DialogSet(this.dialogState);
         this.dialogSet.add(this.qnaDialog); // TODO: add further dialogs for tickets etc.
         this.dialogSet.add(this.ticketDialog);
+        this.dialogSet.add(this.helpDialog);
 
         const endpointQnA = {
             knowledgeBaseId: "8b28463a-ad6f-45fc-9cba-789a2d935b1f",
@@ -66,8 +71,13 @@ class FestoBot extends ActivityHandler {
             let results = await dialogContext.continueDialog();
 
             switch (topIntent) {
-            case "help":
-                await context.sendActivity(`Happy to help you '${topIntent}'`);
+            case "Utilities_Help":
+                // await this.helpDialog.run(context, this.dialogState);
+                // await context.sendActivity(`Happy to help you '${topIntent}'`);
+
+                if (results.status === DialogTurnStatus.empty) {
+                    await dialogContext.beginDialog(this.helpDialog.id);
+                }
                 break;
             case "CreateTicket":
                 // jetzt müssen wir ein ticket starten
