@@ -2,15 +2,14 @@
 // Licensed under the MIT License.
 
 const {
-    ChoiceFactory,
-    ChoicePrompt,
     ComponentDialog,
     ConfirmPrompt,
     DialogSet,
-    DialogTurnStatus,    
+    DialogTurnStatus,
     TextPrompt,
     WaterfallDialog
 } = require("botbuilder-dialogs");
+const { CardFactory } = require("botbuilder");
 
 const TICKET_WATERFALL_DIALOG = "TICKET_WATERFALL_DIALOG";
 const ROOT_DIALOG_ID = "TICKET_ID"; // purpose?
@@ -20,6 +19,7 @@ const TITLE_PROMPT = "TITLE_PROMPT";
 const CONTENT_PROMPT = "CONTENT_PROMPT";
 // const CREATE_TICKET = "CREATE_TICKET";
 const CONFIRM_PROMPT = "CONFIRM_PROMPT";
+const TicketCard = require("../resources/TicketCard.json");
 
 class TicketDialog extends ComponentDialog {
     constructor (userState) {
@@ -36,7 +36,8 @@ class TicketDialog extends ComponentDialog {
             this.companyStep.bind(this),
             this.titleStep.bind(this),
             this.contentStep.bind(this),
-            this.confirmStep.bind(this)
+            this.summaryStep.bind(this)
+            /* this.confirmStep.bind(this) */
         ]));
 
         this.initialDialogId = TICKET_WATERFALL_DIALOG;
@@ -59,14 +60,12 @@ class TicketDialog extends ComponentDialog {
         }
     }
 
-
     async companyStep (step) {
         return step.prompt(COMPANY_ID_PROMPT, "What is your company id?");
     }
 
     async titleStep (step) {
-        this.ticket = {};
-        this.ticket.companyid = step.result;
+        step.values.companyID = await step.result;
 
         // We can send messages to the user at any point in the WaterfallStep.
         // await step.context.sendActivity(`Thanks ${step.result}.`);
@@ -77,7 +76,7 @@ class TicketDialog extends ComponentDialog {
 
     async contentStep (step) {
         // ticket title
-        this.ticket.title = step.result;
+        step.values.title = await step.result;
 
         // We can send messages to the user at any point in the WaterfallStep.
         // await step.context.sendActivity(`Thanks ${step.result}.`);
@@ -86,14 +85,39 @@ class TicketDialog extends ComponentDialog {
         return step.prompt(TITLE_PROMPT, "Please describe your ticket as detailed as possible:");
     }
 
-    async confirmStep (step) {
-        // get ticket - content from previous step
-        this.ticket.content = step.result;
-        // We can send messages to the user at any point in the WaterfallStep.
-        // await step.context.sendActivity("");
+    async summaryStep (step) {
+        step.values.content = await step.result;
+        if (step.result) {
+            // Get the current profile object from user state.
+            // const userProfile = await this.userProfile.get(step.context, new UserProfile());
 
+            const title = step.values.title;
+            const id = step.values.companyID;
+            const content = step.values.content;
+
+            // const msg = `Title: ${title} \n\n Company Id: ${id} \n\n Content: ${content} .`;
+
+            // await step.context.sendActivity(msg);
+            TicketCard.body[3].placeholder = title;
+            TicketCard.body[5].placeholder = id;
+            TicketCard.body[7].placeholder = content;
+
+            await step.context.sendActivity({
+                text: "Here is your Ticket:",
+                attachments: [CardFactory.adaptiveCard(TicketCard)]
+            });
+        } else {
+            await step.context.sendActivity("Thanks. Your profile will not be kept.");
+        }
+        return step.endDialog();
+        // WaterfallStep always finishes with the end of the Waterfall or with another dialog, here it is the end.
+    }
+
+    async confirmStep (step) {
         // WaterfallStep always finishes with the end of the Waterfall or with another dialog, here it is a Prompt Dialog.
-        return step.prompt(CONFIRM_PROMPT, { prompt: "Is this okay?" });
+        return step.prompt(CONFIRM_PROMPT, "Thanks your ticket has been sent!");
+        // await step.context.sendActivity("Thanks your ticket has been sent!");
+        // return step.endDialog();
     }
 }
 
