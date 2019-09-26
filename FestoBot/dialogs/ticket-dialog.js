@@ -91,16 +91,16 @@ class TicketDialog extends ComponentDialog {
             // Get the current profile object from user state.
             // const userProfile = await this.userProfile.get(step.context, new UserProfile());
 
-            const title = step.values.title;
             const id = step.values.companyID;
+            const title = step.values.title;
             const content = step.values.content;
 
             // const msg = `Title: ${title} \n\n Company Id: ${id} \n\n Content: ${content} .`;
 
             // await step.context.sendActivity(msg);
-            TicketCard.body[3].placeholder = title;
-            TicketCard.body[5].placeholder = id;
-            TicketCard.body[7].placeholder = content;
+            TicketCard.body[3].value = id;
+            TicketCard.body[5].value = title;
+            TicketCard.body[7].value = content;
 
             await step.context.sendActivity({
                 text: "Here is your Ticket:",

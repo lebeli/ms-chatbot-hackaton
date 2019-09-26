@@ -41,7 +41,8 @@
             "type": "Input.Text",
             "title": "New Input.Toggle",
             "placeholder": "Your Message",
-            "id": "messageID"
+            "id": "messageID",
+            "isMultiline": true
         },
         {
             "type": "ActionSet",
