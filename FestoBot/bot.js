@@ -85,14 +85,11 @@ class FestoBot extends ActivityHandler {
                 // #TODO
                 break;
             case "QnAMaker": {
-                this.luisToggle = false;
                 // Run the Dialog with the new message Activity.
                 // Shout be outside the switch statement. Cases just for dialog stack management
                 if (results.status === DialogTurnStatus.empty) {
                     await dialogContext.beginDialog(this.qnaDialog.id);
                 }
-                // await this.qnaMakerDialog(context, resultArray);
-                this.luisToggle = true;
                 break;
             }
             default:

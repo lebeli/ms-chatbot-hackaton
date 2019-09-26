@@ -42,7 +42,7 @@ class QnADialog extends ComponentDialog {
         const attachment = {
             name: "PDF",
             contentType: "application/pdf",
-            contentUrl: "D:\\chatbot\festo\\" + resultArray[0].answer
+            contentUrl: "D:\\chatbot\\festo\\" + resultArray[0].answer + ".pdf"
         };
         await step.context.sendActivity({
             text: "I found this document:",
