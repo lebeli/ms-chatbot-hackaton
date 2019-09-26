@@ -5,14 +5,24 @@ const {
 } = require("botbuilder");
 const {
     LuisRecognizer
-} = require("botbuilder-ai");
-// var Store = require("./store");
-const { QnAMaker } = require("botbuilder-ai");
-const { DialogSet, DialogTurnStatus } = require('botbuilder-dialogs');
-const { QnADialog } = require('./dialogs/qna-dialog');
+} = require('botbuilder-ai');
+var Store = require('./store');
+const {
+    QnAMaker
+} = require('botbuilder-ai');
+const {
+    TicketDialog
+} = require('./dialogs/ticket-dialog');
+const {
+    DialogSet,
+    DialogTurnStatus
+} = require('botbuilder-dialogs');
+const {
+    QnADialog
+} = require('./dialogs/qna-dialog');
 
 class FestoBot extends ActivityHandler {
-    constructor (conversationState, userState) {
+    constructor(conversationState, userState) {
         super();
 
         // store for dialog and user state
@@ -30,6 +40,12 @@ class FestoBot extends ActivityHandler {
             host: "https://festokb.azurewebsites.net/qnamaker"
         };
         this.qnaService = new QnAMaker(endpointQnA, {});
+        this.conversationState = conversationState;
+        this.userState = userState;
+
+
+
+
         this.onMessage(async (context, next) => {
             var endpointLuis = {
                 applicationId: "e3ed9236-2b5e-45ee-8eac-0f167760ee7c",
@@ -37,12 +53,12 @@ class FestoBot extends ActivityHandler {
                 endpoint: "https://westeurope.api.cognitive.microsoft.com/luis/v2.0/apps/e3ed9236-2b5e-45ee-8eac-0f167760ee7c?verbose=true&timezoneOffset=0&subscription-key=7719b427d93d4fdd9722766c75b85f3e&q="
             };
 
-            var recognizer = null;
+            let recognizer = null;
             const luisIsConfigured = endpointLuis && endpointLuis.applicationId && endpointLuis.endpointKey && endpointLuis.endpoint;
             if (luisIsConfigured) {
                 recognizer = new LuisRecognizer(endpointLuis, {}, true);
             }
-            var recognizerResult = await recognizer.recognize(context);
+            let recognizerResult = await recognizer.recognize(context);
             var topIntent = LuisRecognizer.topIntent(recognizerResult);
             if (!topIntent || topIntent === "") {
                 topIntent = "None";
@@ -52,32 +68,53 @@ class FestoBot extends ActivityHandler {
             let results = await dialogContext.continueDialog();
 
             switch (topIntent) {
-            case "help":
-                await context.sendActivity(`Happy to help you '${topIntent}'`);
-                break;
-            case "CreateTicket":
-                // #TODO
-                break;
-            case "ContactHelpdesk":
-                // #TODO
-                break;
-            case "QnAMaker": {
-                this.luisToggle = false;
-                // Run the Dialog with the new message Activity.
-                // Shout be outside the switch statement. Cases just for dialog stack management
-                if (results.status === DialogTurnStatus.empty) {
-                    let test = await this.getTop5QnAMakerResults(context);
-                    this.qnaDialog.resultArray = test; // TODO: how to set member variable for result?
-                    await dialogContext.beginDialog(this.qnaDialog.id);
+                case "help":
+                    await context.sendActivity(`Happy to help you '${topIntent}'`);
+                    break;
+                case 'CreateTicket':
+
+                    // wir erstellen einen ticketdialog
+                    this.ticketDialog = new TicketDialog(this.userState);
+
+                    //erstelle property, in dem wir unseren dialog-Status absichern
+                    this.dialogState = this.conversationState.createProperty('DialogState');
+                    //jetzt müssen wir ein ticket starten
+                    await this.ticketDialog.run(context, this.dialogState);
+
+                    // jetzt erstellen wir einen dialogset, der alle anderen dialoge kapselt
+                    const dialogSet = new DialogSet(dialogState);
+
+
+                    dialogSet.add(this);
+
+                    const dialogContext = await dialogSet.createContext(turnContext);
+                    const results = await dialogContext.continueDialog();
+                    if (results.status === DialogTurnStatus.empty) {
+                        await dialogContext.beginDialog(this.id);
+                    }
+
+                    await next();
+                    break;
+                case "ContactHelpdesk":
+                    // #TODO
+                    break;
+                case "QnAMaker": {
+                    this.luisToggle = false;
+                    // Run the Dialog with the new message Activity.
+                    // Shout be outside the switch statement. Cases just for dialog stack management
+                    if (results.status === DialogTurnStatus.empty) {
+                        let test = await this.getTop5QnAMakerResults(context);
+                        this.qnaDialog.resultArray = test; // TODO: how to set member variable for result?
+                        await dialogContext.beginDialog(this.qnaDialog.id);
+                    }
+                    // await this.qnaMakerDialog(context, resultArray);
+                    this.luisToggle = true;
+                    break;
                 }
-                // await this.qnaMakerDialog(context, resultArray);
-                this.luisToggle = true;
-                break;
-            }
-            default:
-                dialogContext = await this.dialogSet.createContext(context);
-                results = await dialogContext.continueDialog();
-                break;
+                default:
+                    dialogContext = await this.dialogSet.createContext(context);
+                    results = await dialogContext.continueDialog();
+                    break;
             }
 
             await next();
@@ -92,7 +129,18 @@ class FestoBot extends ActivityHandler {
             } /* By calling next() you ensure that the next BotHandler is run. */
             await next();
         });
+        this.searchKnowledgeBase = async function (context) {
+            var qnaResult = await this.qnaService.getAnswers(context);
+            return qnaResult;
+            // console.log(context);
+            // if (qnaResult.length) {
+            //     await context.sendActivity(qnaResult[0].answer);
+            // } else {
+            //     await context.sendActivity("I cannot answer your question.");
+            // }
+            // await next();
 
+        }
         this.onDialog(async (context, next) => {
             /* Save any state changes. The load happened during the execution of the Dialog. */
             await this.conversationState.saveChanges(context, false);
@@ -101,7 +149,6 @@ class FestoBot extends ActivityHandler {
             /* By calling next() you ensure that the next BotHandler is run. */
             await next();
         });
-
         this.getTop5QnAMakerResults = async function (context) {
             var qnaMakerOptions = {
                 ScoreThreshold: 0.0, // Default is 0.3
