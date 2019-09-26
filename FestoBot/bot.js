@@ -7,9 +7,8 @@ const {
     LuisRecognizer
 } = require("botbuilder-ai");
 // var Store = require("./store");
-const { QnAMaker } = require("botbuilder-ai");
-const { DialogSet, DialogTurnStatus } = require('botbuilder-dialogs');
-const { QnADialog } = require('./dialogs/qna-dialog');
+const { DialogSet, DialogTurnStatus } = require("botbuilder-dialogs");
+const { QnADialog } = require("./dialogs/qna-dialog");
 
 class FestoBot extends ActivityHandler {
     constructor (conversationState, userState) {
@@ -18,18 +17,10 @@ class FestoBot extends ActivityHandler {
         // store for dialog and user state
         this.conversationState = conversationState;
         this.userState = userState;
-        this.dialogState = conversationState.createProperty('DialogState');
+        this.dialogState = conversationState.createProperty("DialogState");
         this.qnaDialog = new QnADialog(this.dialogState);
         this.dialogSet = new DialogSet(this.dialogState);
         this.dialogSet.add(this.qnaDialog); // TODO: add further dialogs for tickets etc.
-        this.luisToggle = true;
-
-        const endpointQnA = {
-            knowledgeBaseId: "8b28463a-ad6f-45fc-9cba-789a2d935b1f",
-            endpointKey: "4ccf2f7f-ecb6-4923-994c-8121615eca4e",
-            host: "https://festokb.azurewebsites.net/qnamaker"
-        };
-        this.qnaService = new QnAMaker(endpointQnA, {});
         this.onMessage(async (context, next) => {
             var endpointLuis = {
                 applicationId: "e3ed9236-2b5e-45ee-8eac-0f167760ee7c",
@@ -62,16 +53,13 @@ class FestoBot extends ActivityHandler {
                 // #TODO
                 break;
             case "QnAMaker": {
-                this.luisToggle = false;
                 // Run the Dialog with the new message Activity.
                 // Shout be outside the switch statement. Cases just for dialog stack management
                 if (results.status === DialogTurnStatus.empty) {
-                    let test = await this.getTop5QnAMakerResults(context);
-                    this.qnaDialog.resultArray = test; // TODO: how to set member variable for result?
+                    // this.qnaDialog.resultArray = test; // TODO: how to set member variable for result?
                     await dialogContext.beginDialog(this.qnaDialog.id);
                 }
                 // await this.qnaMakerDialog(context, resultArray);
-                this.luisToggle = true;
                 break;
             }
             default:
@@ -101,15 +89,6 @@ class FestoBot extends ActivityHandler {
             /* By calling next() you ensure that the next BotHandler is run. */
             await next();
         });
-
-        this.getTop5QnAMakerResults = async function (context) {
-            var qnaMakerOptions = {
-                ScoreThreshold: 0.0, // Default is 0.3
-                Top: 5 // Get 5 best answers
-            };
-            var result = await this.qnaService.getAnswers(context, qnaMakerOptions);
-            return result;
-        };
 
         /*
         this.qnaMakerDialog = async function (context, resultArray) {
