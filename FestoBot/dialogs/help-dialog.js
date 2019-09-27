@@ -78,9 +78,10 @@ class HelpDialog extends ComponentDialog {
 
     async helpChoiceStep (step) {
         if (step.result.value === "Ask a Question") {
-            return step.prompt(TEXT_PROMPT, "Please type in your Question");
+            await step.prompt(TEXT_PROMPT, "Please type in your Question");
+            return step.endDialog();
         } else {
-            return step.next();
+            return step.endDialog();
         }
     }
 

@@ -27,7 +27,7 @@
                     "items": [
                         {
                             "type": "TextBlock",
-                            "text": "Hello my Friend :entspannt:\n\nI am the Festo Bot and you can use me if you got any problems with our IT. \n\nYou can also create a Ticket if needed.",
+                            "text": "Hello\n\nI am the Festo Bot and I can help you with specific IT problems. \n\nJust type in your questions and you will get back a PDF with hopefully helpful informations. \n\n If I am not able to solve your problems I can create a ticket for you.",
                             "wrap": true
                         }
                     ],
