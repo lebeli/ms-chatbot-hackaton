@@ -69,16 +69,19 @@ class HelpDialog extends ComponentDialog {
         await step.context.sendActivity({
             attachments: [CardFactory.adaptiveCard(HelpCard)]
         });
-        await step.prompt(CHOICE_PROMPT, {
+        return step.prompt(CHOICE_PROMPT, {
             prompt: " ",
             choices: ChoiceFactory.toChoices(["Ask a Question", "Create a Ticket"]),
             style: ListStyle.heroCard
         });
-        return step.next();
     }
 
     async helpChoiceStep (step) {
-        // tbd
+        if (step.result.value === "Ask a Question") {
+            return step.prompt(TEXT_PROMPT, "Please type in your Question");
+        } else {
+            return step.next();
+        }
     }
 
     async transportStep (step) {
