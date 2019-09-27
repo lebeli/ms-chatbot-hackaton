@@ -33,6 +33,9 @@ class FestoBot extends ActivityHandler {
         this.userState = userState;
         // store information within a dialog -> example for storage: this.dialogState.userName = "Franz Franzhausen"
         this.dialogState = conversationState.createProperty("DialogState");
+        // this.dialogState.qna_results = [];
+        // this.dialogState.presented_results = "";
+        // this.dialogState.question = "";
         this.qnaDialog = new QnADialog(this.dialogState);
         this.ticketDialog = new TicketDialog(this.dialogState);
         this.helpDialog = new HelpDialog(this.dialogState);
@@ -40,15 +43,6 @@ class FestoBot extends ActivityHandler {
         this.dialogSet.add(this.qnaDialog); // TODO: add further dialogs for tickets etc.
         this.dialogSet.add(this.ticketDialog);
         this.dialogSet.add(this.helpDialog);
-
-        const endpointQnA = {
-            knowledgeBaseId: "8b28463a-ad6f-45fc-9cba-789a2d935b1f",
-            endpointKey: "4ccf2f7f-ecb6-4923-994c-8121615eca4e",
-            host: "https://festokb.azurewebsites.net/qnamaker"
-        };
-        this.qnaService = new QnAMaker(endpointQnA, {});
-        this.conversationState = conversationState;
-        this.userState = userState;
 
         this.onMessage(async (context, next) => {
             var endpointLuis = {

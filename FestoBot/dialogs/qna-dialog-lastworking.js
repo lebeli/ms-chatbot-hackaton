@@ -4,6 +4,7 @@ const {
     TextPrompt, ChoicePrompt,
     ChoiceFactory, ListStyle
 } = require("botbuilder-dialogs");
+const { Adaptive } = require("adaptivecards");
 const { CardFactory } = require("botbuilder");
 const { QnAMaker } = require("botbuilder-ai");
 
@@ -31,21 +32,22 @@ class QnADialog extends ComponentDialog {
             this.presentSingleResult.bind(this),
             this.rightDocument.bind(this),
             this.processActionSelection.bind(this)]))
-            .addDialog(new ChoicePrompt(CHOICE_PROMPT))
-            .addDialog(new TextPrompt(TEXT_PROMPT));
+            .addDialog(new TextPrompt(TEXT_PROMPT))
+            .addDialog(new ChoicePrompt(CHOICE_PROMPT));
 
         this.initialDialogId = QNA_PRODUCTS_DIALOG_ID;
     }
 
     async presentSingleResult (step) {
         // return await step.prompt(TEXT_PROMPT, { prompt: "I found this document: " + this.top5Result });
-        this.dialogState.qna_results = await this.getTop5QnAMakerResults(step.context);
-        if (this.dialogState.qna_results.length < 1) {
+        this.resultArray = await this.getTop5QnAMakerResults(step.context);
+        if (this.resultArray.length < 1) {
             await step.context.sendActivity("Sorry, no result, please specify your problem.");
-            return step.endDialog();
+            return step.replaceDialog(this.dialogState.id);
+            // return step.endDialog();
         }
-        this.dialogState.presented_result = this.dialogState.qna_results.shift();
-        const id = this.dialogState.presented_result.answer;
+        const id = this.resultArray[0].answer;
+        this.presented = this.resultArray.shift();
 
         const adaptiveCard = this.createAdaptiveCard(id);
 
@@ -55,79 +57,37 @@ class QnADialog extends ComponentDialog {
             text: "I found this document:",
             attachments: [card]
         });
+        // const resultArray = await this.getTop5QnAMakerResults(step.context);
+        // await step.context.sendActivity("I found this document: " + resultArray[0].answer);
         return step.next();
     }
 
-    getCarouselAttachments () {
+    async presentMultipleResults () {
+        // return await step.prompt(TEXT_PROMPT, { prompt: "I found this document: " + this.top5Result });
+        const resultArray = this.resultArray;
+
         // const cardArray = [];
         const attachments = [];
-        this.dialogState.qna_results.forEach(function (element) {
-            /*
+        resultArray.forEach(function (element) {
             attachments.push({
                 name: "PDF",
                 contentType: "application/pdf",
-                contentUrl: "D:\\chatbot\festo\\" + element.answer
+                contentUrl: "D:\\chatbot\festo\\" + resultArray[0].answer
             });
-            */
+            /*
             const id = element.answer;
-            // const cardJson = this.createAdaptiveCard(id);
-            const cardJson = {
-                type: "AdaptiveCard",
-                version: "1.0",
-                body: [
-                    {
-                        type: "TextBlock",
-                        text: "Dokument " + id
-                    },
-                    {
-                        type: "Image",
-                        altText: "",
-                        // url: ".\\resources\\pdf_icon.png",
-                        url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/PDF_file_icon.svg/833px-PDF_file_icon.svg.png",
-                        selectAction: {
-                            type: "Action.OpenUrl",
-                            url: "D:\\chatbot\\festo\\" + id + ".pdf"
-                        },
-                        separator: true,
-                        size: "Medium"
-                    }
-                ],
-                $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
-            };
+            const cardJson = this.createAdaptiveCard(id);
             const card = CardFactory.adaptiveCard(cardJson);
-            attachments.push(card);
+            cardArray.push(card);
+            */
         });
-        return attachments;
-    }
-
-    async rightDocument (step) {
-        return step.prompt(CHOICE_PROMPT, {
-            prompt: "Is the document helpful?",
-            choices: ChoiceFactory.toChoices(["Yes", "No, show me more results"]),
-            style: ListStyle.button
+        //return cardArray;
+        await step.context.sendActivity({
+            text: "I found this document:",
+            attachments: [attachment]
         });
+        return step.next();
     }
-
-    async processActionSelection (step) {
-        switch (step.result.value) {
-        case "Yes":
-            await step.context.sendActivity("Great, can I help you with anything else?");
-            return step.endDialog();
-        case "No, show me more results":
-            if (this.dialogState.qna_results.length === 0) {
-                await step.context.sendActivity("Thats all, please create a ticket");
-                step.beginDialog("TICKET_ID");
-                return step.endDialog();
-            }
-            const attachments =this.getCarouselAttachments();
-            // return cardArray;
-            await step.context.sendActivity({
-                text: "Maybe this is more helpful:",
-                attachments: [attachments]
-            });
-        }
-        return step.endDialog();
-    };
 
     createAdaptiveCard (id) {
         return {
@@ -153,7 +113,53 @@ class QnADialog extends ComponentDialog {
             ],
             $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
         };
-    };
+    }
+
+    async rightDocument (step) {
+        return step.prompt(CHOICE_PROMPT, {
+            prompt: "Is the document helpful?",
+            choices: ChoiceFactory.toChoices(["Yes", "No, show me more results"]),
+            style: ListStyle.button
+        });
+    }
+
+    async processActionSelection (step) {
+        switch (step.result.value) {
+        case "Yes":
+            await step.context.sendActivity("Great, can I help you with anything else?");
+            return step.endDialog();
+        case "No, show me more results": 
+            const resultArray = this.resultArray;
+            if (resultArray.length === 0) {
+                await step.context.sendActivity("Thats all, please create a ticket");
+                step.beginDialog("TICKET_ID");
+                return step.endDialog();
+            }
+
+            // const cardArray = [];
+            const attachments = [];
+            resultArray.forEach(function (element) {
+                attachments.push({
+                    name: "Document " + element.answer,
+                    contentType: "application/pdf",
+                    contentUrl: "D:\\chatbot\festo\\" + resultArray[0].answer
+                });
+                /*
+                const id = element.answer;
+                const cardJson = this.createAdaptiveCard(id);
+                const card = CardFactory.adaptiveCard(cardJson);
+                cardArray.push(card);
+                */
+            });
+            //return cardArray;
+            await step.context.sendActivity({
+                text: "I found this document:",
+                attachments: attachments
+            });
+        }
+        // await step.context.sendActivity("Incorrect choice");
+        return step.next();
+    }
 
     async restartDialog (step) {
         return step.replaceDialog(QNA_PRODUCTS_DIALOG_ID);
