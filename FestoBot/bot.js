@@ -31,6 +31,7 @@ class FestoBot extends ActivityHandler {
         // store for dialog and user state
         this.conversationState = conversationState;
         this.userState = userState;
+
         // store information within a dialog -> example for storage: this.dialogState.userName = "Franz Franzhausen"
         this.dialogState = conversationState.createProperty("DialogState");
         this.qnaDialog = new QnADialog(this.dialogState);
