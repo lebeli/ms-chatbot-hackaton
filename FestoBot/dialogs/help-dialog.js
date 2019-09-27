@@ -4,6 +4,7 @@
 const {
     ChoiceFactory,
     ChoicePrompt,
+    ListStyle,
     ComponentDialog,
     ConfirmPrompt,
     DialogSet,
@@ -12,13 +13,15 @@ const {
     TextPrompt,
     WaterfallDialog
 } = require("botbuilder-dialogs");
+const { CardFactory } = require("botbuilder");
 
 const CHOICE_PROMPT = "CHOICE_PROMPT";
 const CONFIRM_PROMPT = "CONFIRM_PROMPT";
-const NAME_PROMPT = "NAME_PROMPT";
+const TEXT_PROMPT = "TEXT_PROMPT";
 const NUMBER_PROMPT = "NUMBER_PROMPT";
 const WATERFALL_DIALOG = "WATERFALL_DIALOG";
 const ROOT_DIALOG_ID = "HELP_ID"; // purpose?
+const HelpCard = require("../resources/HelpCard.json");
 
 class HelpDialog extends ComponentDialog {
     constructor (userState) {
@@ -26,13 +29,14 @@ class HelpDialog extends ComponentDialog {
 
         // this.userProfile = userState.createProperty(USER_PROFILE);
 
-        this.addDialog(new TextPrompt(NAME_PROMPT));
+        this.addDialog(new TextPrompt(TEXT_PROMPT));
         this.addDialog(new ChoicePrompt(CHOICE_PROMPT));
         this.addDialog(new ConfirmPrompt(CONFIRM_PROMPT));
         this.addDialog(new NumberPrompt(NUMBER_PROMPT, this.agePromptValidator));
 
         this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
-            this.helpStep.bind(this)
+            this.helpCardStep.bind(this),
+            this.helpChoiceStep.bind(this)
             // this.transportStep.bind(this),
             // this.nameStep.bind(this),
             // this.nameConfirmStep.bind(this),
@@ -61,11 +65,20 @@ class HelpDialog extends ComponentDialog {
         }
     }
 
-    async helpStep (step) {
-        return step.prompt(CHOICE_PROMPT, {
-            prompt: "Hi, I'm a Bot and trying to assist you with your Problems!",
-            choices: ChoiceFactory.toChoices(["Create a Ticket", "Search the Knowledge", "Quit"])
+    async helpCardStep (step) {
+        await step.context.sendActivity({
+            attachments: [CardFactory.adaptiveCard(HelpCard)]
         });
+        await step.prompt(CHOICE_PROMPT, {
+            prompt: " ",
+            choices: ChoiceFactory.toChoices(["Ask a Question", "Create a Ticket"]),
+            style: ListStyle.heroCard
+        });
+        return step.next();
+    }
+
+    async helpChoiceStep (step) {
+        // tbd
     }
 
     async transportStep (step) {
@@ -79,7 +92,7 @@ class HelpDialog extends ComponentDialog {
 
     async nameStep (step) {
         step.values.transport = step.result.value;
-        return step.prompt(NAME_PROMPT, "What is your name, human?");
+        return step.prompt(TEXT_PROMPT, "What is your name, human?");
     }
 
     async nameConfirmStep (step) {
