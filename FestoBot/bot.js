@@ -1,5 +1,6 @@
 const {
-    ActivityHandler
+    ActivityHandler,
+    ActionTypes
     // MessageFactory,
     // CardFactory
 } = require("botbuilder");
@@ -23,6 +24,12 @@ const {
 const {
     HelpDialog
 } = require("./dialogs/help-dialog");
+
+const {
+    AzureStorageHelper
+} = require("./services/azurestorage");
+
+
 
 class FestoBot extends ActivityHandler {
     constructor (conversationState, userState) {
@@ -61,6 +68,7 @@ class FestoBot extends ActivityHandler {
             }
             const recognizerResult = await recognizer.recognize(context);
             var topIntent = LuisRecognizer.topIntent(recognizerResult);
+            
             if (!topIntent || topIntent === "") {
                 topIntent = "None";
             }
@@ -74,7 +82,7 @@ class FestoBot extends ActivityHandler {
             case "Utilities_Help":
                 // await this.helpDialog.run(context, this.dialogState);
                 // await context.sendActivity(`Happy to help you '${topIntent}'`);
-
+                
                 if (results.status === DialogTurnStatus.empty) {
                     await dialogContext.beginDialog(this.helpDialog.id);
                 }
