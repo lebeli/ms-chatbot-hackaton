@@ -34,9 +34,11 @@ class FestoBot extends ActivityHandler {
 
         // store information within a dialog -> example for storage: this.dialogState.userName = "Franz Franzhausen"
         this.dialogState = conversationState.createProperty("DialogState");
-        // this.dialogState.qna_results = [];
-        // this.dialogState.presented_results = "";
-        // this.dialogState.question = "";
+        this.dialogState.qna_results = [];
+        this.dialogState.presented_results = [];
+        this.dialogState.question = "";
+        this.dialogState.question_specification = [];
+
         this.qnaDialog = new QnADialog(this.dialogState);
         this.ticketDialog = new TicketDialog(this.dialogState);
         this.helpDialog = new HelpDialog(this.dialogState);
@@ -99,7 +101,14 @@ class FestoBot extends ActivityHandler {
                     // persist initial question
                     this.dialogState.question = context.activity.text;
                     await dialogContext.beginDialog(this.qnaDialog.id);
+                } 
+                /*
+                else {
+                    // user has specified his problem in the qna-dialog
+                    this.dialogState.new_input = true;
+                    this.dialogState.question_specification.push(context.activity.text);
                 }
+                */
                 break;
             }
             default:
