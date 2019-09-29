@@ -102,8 +102,7 @@ class QnADialog extends ComponentDialog {
         return step.prompt(CHOICE_PROMPT, {
             prompt: "Is the document helpful?",
             choices: ChoiceFactory.toChoices(["Yes", "No, show me more results", "I want to rephrase my question"]),
-            retryPrompt: "Lets see, if I can find somesthing else.",
-            style: ListStyle.button
+            style: ListStyle.heroCard
         });
     }
 
@@ -138,7 +137,7 @@ class QnADialog extends ComponentDialog {
 
     async getTop5QnAMakerResults (context) {
         var qnaMakerOptions = {
-            ScoreThreshold: 0.0, // Default is 0.3
+            scoreThreshold: 0.0, // Default is 0.3
             Top: 5 // Get 5 best answers
         };
         var result = await this.qnaService.getAnswers(context, qnaMakerOptions);
