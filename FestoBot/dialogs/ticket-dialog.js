@@ -83,12 +83,11 @@ class TicketDialog extends ComponentDialog {
             await step.context.sendActivity(this.question);
             return await step.prompt(CONFIRM_PROMPT, "Is this your question?", ["yes", "no"]);
         } else {
-            step.next();
+            return step.next();
         }
     }
 
     async contentStep (step) {
-        console.log(step.result);
         if (step.result) {
             return await step.next();
         } else {
@@ -98,8 +97,6 @@ class TicketDialog extends ComponentDialog {
 
     async summaryStep (step) {
         this.question = await this.state.question;
-        console.log(step.result);
-        
         if (!step.result) {
             this.content = this.question;
         } else {
