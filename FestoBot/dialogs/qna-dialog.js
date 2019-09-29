@@ -167,8 +167,8 @@ class QnADialog extends ComponentDialog {
 
     async getTop5QnAMakerResults (context) {
         var qnaMakerOptions = {
-            ScoreThreshold: 0.0, // Default is 0.3
-            Top: 5 // Get 5 best answers
+            scoreThreshold: 0.0, // Default is 0.3
+            top: 5 // Get 5 best answers
         };
         var result = await this.qnaService.getAnswers(context, qnaMakerOptions);
         return result;

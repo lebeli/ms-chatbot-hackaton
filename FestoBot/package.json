@@ -6,6 +6,7 @@
   "dependencies": {
     "adaptivecards": "^1.2.3",
     "azure-storage": "^2.10.3",
+    "base64-stream": "^1.0.0",
     "botbuilder": "^4.5.3",
     "botbuilder-ai": "^4.5.3",
     "botbuilder-dialogs": "^4.5.3",

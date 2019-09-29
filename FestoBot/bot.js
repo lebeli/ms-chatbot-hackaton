@@ -33,8 +33,6 @@ const {
     Summary
 } = require("./services/summary");
 
-
-
 class FestoBot extends ActivityHandler {
     constructor (conversationState, userState) {
         super();
@@ -63,8 +61,8 @@ class FestoBot extends ActivityHandler {
         this.onMessage(async (context, next) => {
             var endpointLuis = {
                 applicationId: "e3ed9236-2b5e-45ee-8eac-0f167760ee7c",
-                endpointKey: "95866d1b04244934899cc84729cc7c4c",
-                endpoint: "https://westeurope.api.cognitive.microsoft.com/luis/v2.0/apps/e3ed9236-2b5e-45ee-8eac-0f167760ee7c?verbose=true&timezoneOffset=0&subscription-key=95866d1b04244934899cc84729cc7c4c&q="
+                endpointKey: "7719b427d93d4fdd9722766c75b85f3e",
+                endpoint: "https://westeurope.api.cognitive.microsoft.com/luis/v2.0/apps/e3ed9236-2b5e-45ee-8eac-0f167760ee7c?verbose=true&timezoneOffset=0&subscription-key=7719b427d93d4fdd9722766c75b85f3e&q="
             };
 
             let recognizer = null;
