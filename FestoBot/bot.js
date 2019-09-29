@@ -89,6 +89,7 @@ class FestoBot extends ActivityHandler {
                 // await context.sendActivity(`Happy to help you '${topIntent}'`);
                 
                 if (results.status === DialogTurnStatus.empty) {
+                    this.qnaDialog.resetDialogState();
                     await dialogContext.beginDialog(this.helpDialog.id);
                 }
                 break;
