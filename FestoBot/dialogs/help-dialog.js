@@ -31,12 +31,6 @@ class HelpDialog extends ComponentDialog {
         this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
             this.helpCardStep.bind(this),
             this.helpChoiceStep.bind(this)
-            // this.transportStep.bind(this),
-            // this.nameStep.bind(this),
-            // this.nameConfirmStep.bind(this),
-            // this.ageStep.bind(this),
-            // this.confirmStep.bind(this),
-            // this.summaryStep.bind(this)
         ]));
 
         this.initialDialogId = WATERFALL_DIALOG;
@@ -60,9 +54,11 @@ class HelpDialog extends ComponentDialog {
     }
 
     async helpCardStep (step) {
+        // adaptive card to give the user information about the bot
         await step.context.sendActivity({
             attachments: [CardFactory.adaptiveCard(HelpCard)]
         });
+        // let the user choose between asking a question or creating a ticket
         return step.prompt(CHOICE_PROMPT, {
             prompt: " ",
             choices: ChoiceFactory.toChoices(["Ask a Question", "Create a Ticket"]),
@@ -71,6 +67,8 @@ class HelpDialog extends ComponentDialog {
     }
 
     async helpChoiceStep (step) {
+        // if user has choosen to ask a question he gets asked to type it in
+        // otherwise the ticket dialog starts
         if (step.result.value === "Ask a Question") {
             await step.prompt(TEXT_PROMPT, "Please type in your Question");
             return step.endDialog();
