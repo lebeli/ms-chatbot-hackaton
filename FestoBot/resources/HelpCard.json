@@ -20,14 +20,15 @@
                             "size": "Medium"
                         }
                     ],
-                    "width": "auto"
+                    "width": "auto",
+                    "verticalContentAlignment": "Center"
                 },
                 {
                     "type": "Column",
                     "items": [
                         {
                             "type": "TextBlock",
-                            "text": "Hello\n\nI am the Festo Bot and I can help you with specific IT problems. \n\nJust type in your questions and you will get back a PDF with hopefully helpful informations. \n\n If I am not able to solve your problems I can create a ticket for you.",
+                            "text": "Just type in your questions and you will get back a PDF with hopefully helpful informations. \n\n If I am not able to solve your problems I can create a ticket for you.",
                             "wrap": true
                         }
                     ],
@@ -38,4 +39,4 @@
     ],
     "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
     "version": "1.0"
- }
+}
