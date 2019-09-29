@@ -1,5 +1,6 @@
 const {
-    ActivityHandler
+    ActivityHandler,
+    ActionTypes
     // MessageFactory,
     // CardFactory
 } = require("botbuilder");
@@ -24,15 +25,33 @@ const {
     HelpDialog
 } = require("./dialogs/help-dialog");
 
+const {
+    AzureStorageHelper
+} = require("./services/azurestorage");
+
+const {
+    Summary
+} = require("./services/summary");
+
+
+
 class FestoBot extends ActivityHandler {
     constructor (conversationState, userState) {
         super();
 
+        // this.sum = new Summary();
+
         // store for dialog and user state
         this.conversationState = conversationState;
         this.userState = userState;
+
         // store information within a dialog -> example for storage: this.dialogState.userName = "Franz Franzhausen"
         this.dialogState = conversationState.createProperty("DialogState");
+        this.dialogState.qna_results = [];
+        this.dialogState.presented_results = [];
+        this.dialogState.question = "";
+        this.dialogState.question_specification = [];
+
         this.qnaDialog = new QnADialog(this.dialogState);
         this.ticketDialog = new TicketDialog(this.dialogState);
         this.helpDialog = new HelpDialog(this.dialogState);
@@ -40,15 +59,6 @@ class FestoBot extends ActivityHandler {
         this.dialogSet.add(this.qnaDialog); // TODO: add further dialogs for tickets etc.
         this.dialogSet.add(this.ticketDialog);
         this.dialogSet.add(this.helpDialog);
-
-        const endpointQnA = {
-            knowledgeBaseId: "8b28463a-ad6f-45fc-9cba-789a2d935b1f",
-            endpointKey: "4ccf2f7f-ecb6-4923-994c-8121615eca4e",
-            host: "https://festokb.azurewebsites.net/qnamaker"
-        };
-        this.qnaService = new QnAMaker(endpointQnA, {});
-        this.conversationState = conversationState;
-        this.userState = userState;
 
         this.onMessage(async (context, next) => {
             var endpointLuis = {
@@ -64,6 +74,7 @@ class FestoBot extends ActivityHandler {
             }
             const recognizerResult = await recognizer.recognize(context);
             var topIntent = LuisRecognizer.topIntent(recognizerResult);
+            
             if (!topIntent || topIntent === "") {
                 topIntent = "None";
             }
@@ -77,7 +88,7 @@ class FestoBot extends ActivityHandler {
             case "Utilities_Help":
                 // await this.helpDialog.run(context, this.dialogState);
                 // await context.sendActivity(`Happy to help you '${topIntent}'`);
-
+                
                 if (results.status === DialogTurnStatus.empty) {
                     await dialogContext.beginDialog(this.helpDialog.id);
                 }
@@ -104,7 +115,14 @@ class FestoBot extends ActivityHandler {
                     // persist initial question
                     this.dialogState.question = context.activity.text;
                     await dialogContext.beginDialog(this.qnaDialog.id);
+                } 
+                /*
+                else {
+                    // user has specified his problem in the qna-dialog
+                    this.dialogState.new_input = true;
+                    this.dialogState.question_specification.push(context.activity.text);
                 }
+                */
                 break;
             }
             default:
