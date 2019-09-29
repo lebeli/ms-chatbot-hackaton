@@ -49,6 +49,7 @@ class FestoBot extends ActivityHandler {
         this.dialogState.presented_results = [];
         this.dialogState.question = "";
         this.dialogState.question_specification = [];
+        this.dialogState.new_input = false;
 
         this.qnaDialog = new QnADialog(this.dialogState);
         this.ticketDialog = new TicketDialog(this.dialogState);
@@ -100,7 +101,6 @@ class FestoBot extends ActivityHandler {
                 if (results.status === DialogTurnStatus.empty) {
                     await dialogContext.beginDialog(this.ticketDialog.id);
                 }
-
                 await next();
                 break;
             case "ContactHelpdesk":
@@ -111,16 +111,18 @@ class FestoBot extends ActivityHandler {
                 // Shout be outside the switch statement. Cases just for dialog stack management
                 if (results.status === DialogTurnStatus.empty) {
                     // persist initial question
-                    this.dialogState.question = context.activity.text;
+                    this.dialogState.question = this.dialogState.question + ". " + context.activity.text;
                     await dialogContext.beginDialog(this.qnaDialog.id);
-                } 
+                }
                 /*
                 else {
                     // user has specified his problem in the qna-dialog
                     this.dialogState.new_input = true;
                     this.dialogState.question_specification.push(context.activity.text);
+                    await dialogContext.replaceDialog(this.qnaDialog.id);
                 }
                 */
+                await next();
                 break;
             }
             default:
@@ -136,7 +138,7 @@ class FestoBot extends ActivityHandler {
             const membersAdded = context.activity.membersAdded;
             for (let cnt = 0; cnt < membersAdded.length; ++cnt) {
                 if (membersAdded[cnt].id !== context.activity.recipient.id) {
-                    await context.sendActivity("Hi, How can i help you with your IT problem?");
+                    await context.sendActivity("Hi, how can I help you with your IT problem?");
                 }
             } /* By calling next() you ensure that the next BotHandler is run. */
             await next();
