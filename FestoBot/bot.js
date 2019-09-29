@@ -29,11 +29,17 @@ const {
     AzureStorageHelper
 } = require("./services/azurestorage");
 
+const {
+    Summary
+} = require("./services/summary");
+
 
 
 class FestoBot extends ActivityHandler {
     constructor (conversationState, userState) {
         super();
+
+        // this.sum = new Summary();
 
         // store for dialog and user state
         this.conversationState = conversationState;
