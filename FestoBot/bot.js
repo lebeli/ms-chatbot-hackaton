@@ -32,6 +32,8 @@ const {
 const {
     Summary
 } = require("./services/summary");
+const WelcomeCard = require("./resources/WelcomeCard.json");
+const { CardFactory, MessageFactory } = require("botbuilder");
 
 class FestoBot extends ActivityHandler {
     constructor (conversationState, userState) {
@@ -135,11 +137,15 @@ class FestoBot extends ActivityHandler {
             const membersAdded = context.activity.membersAdded;
             for (let cnt = 0; cnt < membersAdded.length; ++cnt) {
                 if (membersAdded[cnt].id !== context.activity.recipient.id) {
-                    await context.sendActivity("Hi, How can i help you with your IT problem?");
+                    const card = CardFactory.adaptiveCard(WelcomeCard);
+                    await context.sendActivity({
+                        attachments: [card]
+                    });
                 }
             } /* By calling next() you ensure that the next BotHandler is run. */
             await next();
         });
+
         this.onDialog(async (context, next) => {
             /* Save any state changes. The load happened during the execution of the Dialog. */
             await this.conversationState.saveChanges(context, false);

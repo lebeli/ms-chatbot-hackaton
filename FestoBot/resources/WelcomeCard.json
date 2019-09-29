@@ -1,0 +1,51 @@
+{
+    "type": "AdaptiveCard",
+    "version": "1.0",
+    "body": [
+        {
+            "type": "TextBlock",
+            "text": "Welcome to your IT HelpBot",
+            "spacing": "None",
+            "size": "Medium",
+            "weight": "Bolder"
+        },
+        {
+            "type": "ColumnSet",
+            "columns": [
+                {
+                    "type": "Column",
+                    "width": "auto",
+                    "items": [
+                        {
+                            "type": "Image",
+                            "altText": "",
+                            "url": "https://cdn.dribbble.com/users/722835/screenshots/4082720/bot_icon.gif",
+                            "size": "Medium"
+                        }
+                    ],
+                    "verticalContentAlignment": "Center"
+                },
+                {
+                    "type": "Column",
+                    "width": "stretch",
+                    "items": [
+                        {
+                            "type": "RichTextBlock",
+                            "inlines": [
+                                {
+                                    "type": "TextRun",
+                                    "text": "Hi there, I am FestoBot. I will try to help you with solving your IT problems."
+                                }
+                            ],
+                            "horizontalAlignment": "Left"
+                        }
+                    ],
+                    "horizontalAlignment": "Left",
+                    "verticalContentAlignment": "Center"
+                }
+            ],
+            "spacing": "Medium"
+        }
+    ],
+    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json"
+}
