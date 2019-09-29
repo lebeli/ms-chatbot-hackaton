@@ -62,7 +62,7 @@ class FestoBot extends ActivityHandler {
         this.onMessage(async (context, next) => {
             var endpointLuis = {
                 applicationId: "e3ed9236-2b5e-45ee-8eac-0f167760ee7c",
-                endpointKey: "7719b427d93d4fdd9722766c75b85f3e",
+                endpointKey: "f5f345087c6a4d458d3a981900e270f2",
                 endpoint: "https://westeurope.api.cognitive.microsoft.com/luis/v2.0/apps/e3ed9236-2b5e-45ee-8eac-0f167760ee7c?verbose=true&timezoneOffset=0&subscription-key=7719b427d93d4fdd9722766c75b85f3e&q="
             };
 

@@ -51,9 +51,21 @@ class QnADialog extends ComponentDialog {
         this.dialogState.qna_results.forEach(function (element) {
             qnaResultsIDs.push(element.answer);
         });
+        // A specified question to turnContext
+        step.context._activity.text = this.dialogState.question;
         // add results that were not already recieved
         const qnaResultsNew = [];
         const qnaResults = await this.getTop5QnAMakerResults(step.context);
+        if (qnaResults.length < 1) {
+            // a result has already been presented
+            if (this.dialogState.presented_results.length > 0) {
+                await step.context.sendActivity("Again no luck, I'll write a ticket for you to help you with your problem.");
+                return step.replaceDialog("TICKET_ID");
+            } else {
+                await step.context.sendActivity("Sorry, no result, please specify your problem.");
+                return step.endDialog();
+            }
+        }
         qnaResults.forEach(function (element) {
             if (!presentedResultsIDs.includes(element.answer) && !qnaResultsIDs.includes(element.answer)) {
                 qnaResultsNew.push(element);
@@ -62,18 +74,9 @@ class QnADialog extends ComponentDialog {
         // sort qna results according to propability
         // this.dialogState.qna_results
         // add result with highest confidence
-        if (qnaResultsNew.length < 1 && this.dialogState.qna_results.length > 0) {
-            await step.context.sendActivity("Again no luck, I'll write a ticket for you to help you with your problem.");
-            return step.replaceDialog("TICKET_ID");
-        }
         const qnaResultCurrent = qnaResultsNew.shift();
-        this.dialogState.qna_results.push(qnaResultsNew);
+        this.dialogState.qna_results.push(...qnaResultsNew);  // push(...array) extends other array
         this.dialogState.presented_results.push(qnaResultCurrent);
-
-        if (this.dialogState.qna_results.length < 1) {
-            await step.context.sendActivity("Sorry, no result, please specify your problem.");
-            return step.endDialog();
-        }
 
         const id = qnaResultCurrent.answer;
         const adaptiveCard = createAdaptiveCard(id);
@@ -98,7 +101,7 @@ class QnADialog extends ComponentDialog {
     async rightDocument (step) {
         return step.prompt(CHOICE_PROMPT, {
             prompt: "Is the document helpful?",
-            choices: ChoiceFactory.toChoices(["Yes", "No, show me more results", "I want to refrase my question"]),
+            choices: ChoiceFactory.toChoices(["Yes", "No, show me more results", "I want to rephrase my question"]),
             retryPrompt: "Lets see, if I can find somesthing else.",
             style: ListStyle.button
         });
@@ -113,8 +116,7 @@ class QnADialog extends ComponentDialog {
         case "No, show me more results":
             if (this.dialogState.qna_results.length < 1) {
                 await step.context.sendActivity("Thats all, please create a ticket");
-                step.beginDialog("TICKET_ID");
-                return step.endDialog();
+                return step.replaceDialog("TICKET_ID");
             } else {
                 const attachments = createAttachments(this.dialogState);
                 await step.context.sendActivity({
@@ -125,7 +127,7 @@ class QnADialog extends ComponentDialog {
             }
         case "I want to rephrase my question":
             await step.context.sendActivity("Go ahead, I'll try my best");
-            step.endDialog();
+            return step.endDialog();
         }
         return step.endDialog();
     };
