@@ -51,6 +51,7 @@ class FestoBot extends ActivityHandler {
         this.dialogState.presented_results = [];
         this.dialogState.question = "";
         this.dialogState.question_specification = [];
+        this.dialogState.new_input = false;
 
         this.qnaDialog = new QnADialog(this.dialogState);
         this.ticketDialog = new TicketDialog(this.dialogState);
@@ -63,7 +64,7 @@ class FestoBot extends ActivityHandler {
         this.onMessage(async (context, next) => {
             var endpointLuis = {
                 applicationId: "e3ed9236-2b5e-45ee-8eac-0f167760ee7c",
-                endpointKey: "7719b427d93d4fdd9722766c75b85f3e",
+                endpointKey: "f5f345087c6a4d458d3a981900e270f2",
                 endpoint: "https://westeurope.api.cognitive.microsoft.com/luis/v2.0/apps/e3ed9236-2b5e-45ee-8eac-0f167760ee7c?verbose=true&timezoneOffset=0&subscription-key=7719b427d93d4fdd9722766c75b85f3e&q="
             };
 
@@ -90,6 +91,7 @@ class FestoBot extends ActivityHandler {
                 // await context.sendActivity(`Happy to help you '${topIntent}'`);
                 
                 if (results.status === DialogTurnStatus.empty) {
+                    this.qnaDialog.resetDialogState();
                     await dialogContext.beginDialog(this.helpDialog.id);
                 }
                 break;
@@ -101,7 +103,6 @@ class FestoBot extends ActivityHandler {
                 // const results = await dialogContext.continueDialog();
                 await dialogContext.beginDialog(this.ticketDialog.id);
                 
-
                 await next();
                 break;
             case "ContactHelpdesk":
@@ -112,16 +113,18 @@ class FestoBot extends ActivityHandler {
                 // Shout be outside the switch statement. Cases just for dialog stack management
                 if (results.status === DialogTurnStatus.empty) {
                     // persist initial question
-                    this.dialogState.question = context.activity.text;
+                    this.dialogState.question = this.dialogState.question + ". " + context.activity.text;
                     await dialogContext.beginDialog(this.qnaDialog.id);
-                } 
+                }
                 /*
                 else {
                     // user has specified his problem in the qna-dialog
                     this.dialogState.new_input = true;
                     this.dialogState.question_specification.push(context.activity.text);
+                    await dialogContext.replaceDialog(this.qnaDialog.id);
                 }
                 */
+                await next();
                 break;
             }
             default:

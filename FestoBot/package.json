@@ -10,7 +10,7 @@
     "botbuilder": "^4.5.3",
     "botbuilder-ai": "^4.5.3",
     "botbuilder-dialogs": "^4.5.3",
-    "dotenv-extended": "^2.0.1",
+    "dotenv-extended": "^2.4.0",
     "http-parser": "^1.0.3",
     "restify": "^6.3.4"
   },
