@@ -67,7 +67,7 @@ class TicketDialog extends ComponentDialog {
     }
 
     async companyStep (step) {
-        return await step.prompt(COMPANY_ID_PROMPT, "What is your company id?");
+        return await step.prompt(COMPANY_ID_PROMPT, "Create Ticket: What is your company id?");
     }
 
     async titleStep (step) {

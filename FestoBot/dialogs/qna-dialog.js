@@ -26,7 +26,7 @@ class QnADialog extends ComponentDialog {
             host: "https://festokb.azurewebsites.net/qnamaker"
         };
         this.qnaService = new QnAMaker(endpointQnA, {});
-        var storageHelper = new AzureStorageHelper();
+        this.storageHelper = new AzureStorageHelper();
 
         this.dialogState = dialogState;
 
@@ -38,6 +38,19 @@ class QnADialog extends ComponentDialog {
             .addDialog(new ConfirmPrompt(CONFIRM_PROMPT));
 
         this.initialDialogId = QNA_DIALOG_ID;
+    }
+
+    async createAttachments (dialogState) {
+        const attachments = [];
+        return new Promise((resolve, reject) => {
+            dialogState.qna_results.forEach(async function (element, index, array) {
+                const id = element.answer;
+                const storageHelper = new AzureStorageHelper();
+                const attachment = await storageHelper.getAttachment("dokumente", id);
+                attachments.push(attachment);
+                if (index === array.length - 1) resolve(attachments);
+            });
+        });
     }
 
     async presentSingleResult (step) {
@@ -77,23 +90,22 @@ class QnADialog extends ComponentDialog {
         // this.dialogState.qna_results
         // add result with highest confidence
         const qnaResultCurrent = qnaResultsNew.shift();
-        this.dialogState.qna_results.push(...qnaResultsNew);  // push(...array) extends other array
+        this.dialogState.qna_results.push(...qnaResultsNew); // push(...array) extends other array
         this.dialogState.presented_results.push(qnaResultCurrent);
 
         const id = qnaResultCurrent.answer;
-        const adaptiveCard = createAdaptiveCard(id);
-        const card = CardFactory.adaptiveCard(adaptiveCard);
+        const attachment = await this.storageHelper.getAttachment("dokumente", id);
 
         if (this.dialogState.new_input) {
             await step.context.sendActivity({
                 text: "Maybe this document is more fitting:",
-                attachments: [card]
+                attachments: [attachment]
             });
             this.dialogState.new_input = false; // TODO: add new input handling for after answering with "no"
         } else {
             await step.context.sendActivity({
                 text: "I found this document:",
-                attachments: [card]
+                attachments: [attachment]
             });
         }
 
@@ -116,13 +128,12 @@ class QnADialog extends ComponentDialog {
             return step.endDialog();
         case "No, show me more results":
             if (this.dialogState.qna_results.length < 1) {
-                await step.context.sendActivity("Thats all, please create a ticket");
+                await step.context.sendActivity("Sorry, there are not more documents.");
                 return step.replaceDialog("TICKET_ID");
             } else {
-                const attachments = createAttachments(this.dialogState);
+                const attachments = await this.createAttachments(this.dialogState);
                 await step.context.sendActivity({
-                    attachments: attachments,
-                    attachmentLayout: AttachmentLayoutTypes.Carousel
+                    attachments: attachments
                 });
                 return step.endDialog();
             }
@@ -215,11 +226,5 @@ function createAdaptiveCard (id) {
         $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
     };
 };
-
-                
-                var attachment = await storageHelper.getAttachment("dokumente", "185.pdf");                await context.sendActivity({
-                   text: "this might help you:",
-                   attachments: [attachment]
-               });
 
 module.exports.QnADialog = QnADialog;
