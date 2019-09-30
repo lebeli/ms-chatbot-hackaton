@@ -60,6 +60,8 @@ class QnADialog extends ComponentDialog {
      * @param {*} dialogState
      */
     async createAttachments (dialogState) {
+
+
         const attachments = [];
         return new Promise((resolve, reject) => {
             dialogState.qna_results.forEach(async function (element, index, array) {
@@ -73,6 +75,7 @@ class QnADialog extends ComponentDialog {
     }
 
     async presentSingleResult (step) {
+        resetDialogState(this.dialogState);    
         const presentedResultsIDs = [];
         this.dialogState.presented_results.forEach(function (element) {
             presentedResultsIDs.push(element.answer);
@@ -216,15 +219,15 @@ class QnADialog extends ComponentDialog {
 /// ////////////////////////////////////////////////////////////////
 
 /**
- * reset the dialogstate, for static usage
+ * reset the dialogstate 
  * @param {*} dialogState
  */
 function resetDialogState (dialogState) {
     dialogState.qna_results = [];
     dialogState.presented_results = [];
-    dialogState.question = "";
-    dialogState.question_specification = [];
-    dialogState.new_input = false;
+    // dialogState.question = "";
+    // dialogState.question_specification = [];
+    // dialogState.new_input = false;
 }
 
 module.exports.QnADialog = QnADialog;
