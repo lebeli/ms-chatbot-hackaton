@@ -1,11 +1,10 @@
 // const { InputHints, MessageFactory } = require("botbuilder");
 const {
     ComponentDialog, WaterfallDialog,
-    TextPrompt, ChoicePrompt, ConfirmPrompt,
+    ChoicePrompt, ConfirmPrompt,
     ChoiceFactory, ListStyle
 } = require("botbuilder-dialogs");
 const { AzureStorageHelper } = require("../services/azurestorage");
-const { CardFactory, AttachmentLayoutTypes } = require("botbuilder");
 const { QnAMaker } = require("botbuilder-ai");
 
 // prompt ids
@@ -16,11 +15,11 @@ const MULTIPLE_CONFIRM_PROMPT = "multipleConfirmPrompt";
 
 // dialog ids
 const QNA_DIALOG_ID = "qnaDialog";
-const ROOT_DIALOG_ID = "rootQnAId"; 
+const ROOT_DIALOG_ID = "rootQnAId";
 
 /**
  * Dialog, which searches the QnA-Knowledge base based on the given user input
- * 
+ *
  * The QnA-Knowledge will return an document id, which will then get downloaded and served to the user.
  * If the document, that matches that question is not helpful, the user can request additional documents.
  * if those are not helpful, the bot offers to create a ticket through an dialog as an alternative
@@ -58,7 +57,7 @@ class QnADialog extends ComponentDialog {
 
     /**
      * Create the attachments
-     * @param {*} dialogState 
+     * @param {*} dialogState
      */
     async createAttachments (dialogState) {
         const attachments = [];
@@ -72,7 +71,6 @@ class QnADialog extends ComponentDialog {
             });
         });
     }
-
 
     async presentSingleResult (step) {
         const presentedResultsIDs = [];
@@ -132,8 +130,8 @@ class QnADialog extends ComponentDialog {
     }
 
     /**
-     * Check whether the first presented document was helpful 
-     * @param {*} step 
+     * Check whether the first presented document was helpful
+     * @param {*} step
      */
     async rightDocument (step) {
         return step.prompt(CHOICE_PROMPT, {
@@ -145,7 +143,7 @@ class QnADialog extends ComponentDialog {
 
     /**
      * Ask the user, if he needs further help or wether the presented documents were helpful for him
-     * @param {*} step 
+     * @param {*} step
      */
     async multipleAnswersHelpful (step) {
         return step.prompt(MULTIPLE_CHOICE_PROMPT, {
@@ -158,7 +156,7 @@ class QnADialog extends ComponentDialog {
     /**
      * When the user reached this step, the chatbot asked him if his problem is solved
      * based on the response, we will present more results or fall back into the idle state
-     * @param {*} step 
+     * @param {*} step
      */
     async processActionSelection (step) {
         switch (step.result.value) {
@@ -170,7 +168,7 @@ class QnADialog extends ComponentDialog {
             // maybe we dont have more documents
             if (this.dialogState.qna_results.length < 1) {
                 await step.context.sendActivity("Sorry, there are no more documents.");
-                // if the first document was not helpful, and there are no more documents left, 
+                // if the first document was not helpful, and there are no more documents left,
                 // the user probably wants to create a ticket
                 return step.replaceDialog("TICKET_ID");
             } else {
@@ -189,7 +187,7 @@ class QnADialog extends ComponentDialog {
 
     /**
      * Get the most relevant documents
-     * @param {*} context 
+     * @param {*} context
      */
     async getTopResults (context, amount) {
         var qnaMakerOptions = {
@@ -202,7 +200,7 @@ class QnADialog extends ComponentDialog {
 
     /**
      * reset the dialogstate
-     * @param {*} dialogState 
+     * @param {*} dialogState
      */
     resetDialogState () {
         this.dialogState.qna_results = [];
@@ -213,13 +211,13 @@ class QnADialog extends ComponentDialog {
     }
 }
 
-///////////////////////////////////////////////////////////////////
-////////               Helper functions                  //////////
-///////////////////////////////////////////////////////////////////
+/// ////////////////////////////////////////////////////////////////
+/// /////               Helper functions                  //////////
+/// ////////////////////////////////////////////////////////////////
 
 /**
  * reset the dialogstate, for static usage
- * @param {*} dialogState 
+ * @param {*} dialogState
  */
 function resetDialogState (dialogState) {
     dialogState.qna_results = [];
@@ -228,6 +226,5 @@ function resetDialogState (dialogState) {
     dialogState.question_specification = [];
     dialogState.new_input = false;
 }
-
 
 module.exports.QnADialog = QnADialog;

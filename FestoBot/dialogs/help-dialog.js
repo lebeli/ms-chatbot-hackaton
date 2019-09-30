@@ -3,8 +3,6 @@ const {
     ChoicePrompt,
     ListStyle,
     ComponentDialog,
-    DialogSet,
-    DialogTurnStatus,
     TextPrompt,
     WaterfallDialog
 } = require("botbuilder-dialogs");

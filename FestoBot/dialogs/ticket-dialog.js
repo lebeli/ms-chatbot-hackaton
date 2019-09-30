@@ -5,9 +5,6 @@
 const {
     ComponentDialog,
     ActivityPrompt,
-    // ChoicePrompt,
-    DialogSet,
-    DialogTurnStatus,
     TextPrompt,
     ConfirmPrompt,
     WaterfallDialog
@@ -58,7 +55,7 @@ class TicketDialog extends ComponentDialog {
     /**
      * Ask the user for the company id
      * In a real world scenario, that company can be mapped to the telephone, email, location etc.
-     * @param {*} step 
+     * @param {*} step
      */
     async companyStep (step) {
         return await step.prompt(COMPANY_ID_PROMPT, "Create Ticket: What is your company id?");
@@ -66,7 +63,7 @@ class TicketDialog extends ComponentDialog {
 
     /**
      * Save the company id and prompt for the ticket title
-     * @param {*} step 
+     * @param {*} step
      */
     async titleStep (step) {
         step.values.companyID = step.result;
@@ -77,7 +74,7 @@ class TicketDialog extends ComponentDialog {
     /**
      * If the user interacted with the chatbot earlier, he might want to create a ticket
      * based on his previous question. In this step, we will ask him if he wants to input that question into the ticket
-     * @param {*} step 
+     * @param {*} step
      */
     async confirmQuestion (step) {
         step.values.title = step.result;
@@ -92,7 +89,7 @@ class TicketDialog extends ComponentDialog {
 
     /**
      * if no question was previously asked, the user should describe his problem in this step
-     * @param {*} step 
+     * @param {*} step
      */
     async contentStep (step) {
         if (step.result) {
@@ -106,7 +103,7 @@ class TicketDialog extends ComponentDialog {
      * create a summary based on the input that the chatbot received from the user
      * this will be done in a adaptive card, where he will be able to edit his ticket before he can
      * submit or cancels the ticket
-     * @param {*} step 
+     * @param {*} step
      */
     async summaryStep (step) {
         this.question = await this.state.question;
@@ -117,7 +114,7 @@ class TicketDialog extends ComponentDialog {
         }
         const id = step.values.companyID;
         const title = step.values.title;
-        
+
         // fill the ticket card with our values
         TicketCard.body[3].value = id;
         TicketCard.body[5].value = title;
@@ -133,7 +130,7 @@ class TicketDialog extends ComponentDialog {
 
     /**
      * Verifiy, wether the user wants to submit or cancel the ticket
-     * @param {*} step 
+     * @param {*} step
      */
     async showUserInputStep (step) {
         const userInput = step.result.value;

@@ -1,15 +1,8 @@
 const {
-    ActivityHandler,
-    ActionTypes
-    // MessageFactory,
-    // CardFactory
+    ActivityHandler
 } = require("botbuilder");
 const {
     LuisRecognizer
-} = require("botbuilder-ai");
-// var Store = require("./store");
-const {
-    QnAMaker
 } = require("botbuilder-ai");
 const {
     TicketDialog
@@ -25,12 +18,8 @@ const {
     HelpDialog
 } = require("./dialogs/help-dialog");
 
-const {
-    AzureStorageHelper
-} = require("./services/azurestorage");
-
 const WelcomeCard = require("./resources/WelcomeCard.json");
-const { CardFactory, MessageFactory } = require("botbuilder");
+const { CardFactory } = require("botbuilder");
 
 class FestoBot extends ActivityHandler {
     constructor (conversationState, userState) {
@@ -49,7 +38,7 @@ class FestoBot extends ActivityHandler {
 
         this.qnaDialog = new QnADialog(this.dialogState);
         this.ticketDialog = new TicketDialog(this.dialogState);
-        
+
         this.helpDialog = new HelpDialog();
         this.dialogSet = new DialogSet(this.dialogState);
         this.dialogSet.add(this.qnaDialog);
@@ -57,7 +46,6 @@ class FestoBot extends ActivityHandler {
         this.dialogSet.add(this.helpDialog);
 
         this.onMessage(async (context, next) => {
-           
             var endpointLuis = {
                 applicationId: process.env.LUIS_APPLICATION_ID,
                 endpointKey: process.env.LUIS_ENDPOINT_KEY,
@@ -71,7 +59,7 @@ class FestoBot extends ActivityHandler {
             }
             const recognizerResult = await recognizer.recognize(context);
             var topIntent = LuisRecognizer.topIntent(recognizerResult);
-            
+
             if (!topIntent || topIntent === "") {
                 topIntent = "None";
             }
@@ -91,7 +79,7 @@ class FestoBot extends ActivityHandler {
             case "CreateTicket":
                 // jetzt müssen wir ein ticket starten
                 await dialogContext.beginDialog(this.ticketDialog.id);
-                
+
                 await next();
                 break;
             case "ContactHelpdesk":
@@ -105,14 +93,6 @@ class FestoBot extends ActivityHandler {
                     this.dialogState.question = this.dialogState.question + ". " + context.activity.text;
                     await dialogContext.beginDialog(this.qnaDialog.id);
                 }
-                /*
-                else {
-                    // user has specified his problem in the qna-dialog
-                    this.dialogState.new_input = true;
-                    this.dialogState.question_specification.push(context.activity.text);
-                    await dialogContext.replaceDialog(this.qnaDialog.id);
-                }
-                */
                 await next();
                 break;
             }

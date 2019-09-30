@@ -1,6 +1,4 @@
 const storage = require("azure-storage");
-const fs = require("fs");
-const stream = require("stream");
 var base64 = require("base64-stream");
 const pdfMapper = require("../resources/PdfTitleMapping.json");
 
