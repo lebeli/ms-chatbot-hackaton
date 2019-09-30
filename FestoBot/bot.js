@@ -90,10 +90,10 @@ class FestoBot extends ActivityHandler {
                 // await this.helpDialog.run(context, this.dialogState);
                 // await context.sendActivity(`Happy to help you '${topIntent}'`);
                 
-                if (results.status === DialogTurnStatus.empty) {
-                    this.qnaDialog.resetDialogState();
-                    await dialogContext.beginDialog(this.helpDialog.id);
-                }
+                //if (results.status === DialogTurnStatus.empty) {
+                this.qnaDialog.resetDialogState();
+                await dialogContext.beginDialog(this.helpDialog.id);
+                //}
                 break;
             case "CreateTicket":
                 // jetzt müssen wir ein ticket starten
@@ -102,7 +102,6 @@ class FestoBot extends ActivityHandler {
                 // const dialogContext = await dialogSet.createContext(turnContext);
                 // const results = await dialogContext.continueDialog();
                 await dialogContext.beginDialog(this.ticketDialog.id);
-                
                 await next();
                 break;
             case "ContactHelpdesk":
@@ -112,19 +111,18 @@ class FestoBot extends ActivityHandler {
                 // Run the Dialog with the new message Activity.
                 // Shout be outside the switch statement. Cases just for dialog stack management
                 if (results.status === DialogTurnStatus.empty) {
-                    // persist initial question
-                    this.dialogState.question = this.dialogState.question + ". " + context.activity.text;
-                    await dialogContext.beginDialog(this.qnaDialog.id);
+                    if (dialogContext.context._activity.text === "Yes") {
+                        // await dialogContext.beginDialog(this.ticketDialog.id);
+                        dialogContext.continueDialog();
+                    } else {
+                        // persist initial question
+                        this.dialogState.question = this.dialogState.question + ". " + context.activity.text;
+                        await dialogContext.beginDialog(this.qnaDialog.id);
+                    }
+                } else {
+                    dialogContext.endDialog();
                 }
-                /*
-                else {
-                    // user has specified his problem in the qna-dialog
-                    this.dialogState.new_input = true;
-                    this.dialogState.question_specification.push(context.activity.text);
-                    await dialogContext.replaceDialog(this.qnaDialog.id);
-                }
-                */
-                await next();
+                // await next();
                 break;
             }
             default:
@@ -146,6 +144,7 @@ class FestoBot extends ActivityHandler {
                     });
                 }
             } /* By calling next() you ensure that the next BotHandler is run. */
+            this.qnaDialog.resetDialogState();
             await next();
         });
 

@@ -8,10 +8,11 @@ const { AzureStorageHelper } = require("../services/azurestorage");
 const { CardFactory, AttachmentLayoutTypes } = require("botbuilder");
 const { QnAMaker } = require("botbuilder-ai");
 
-const TEXT_PROMPT = "textPrompt";
 const CHOICE_PROMPT = "choicePrompt";
-const CONFIRM_PROMPT = "confirmPrompt";
+const TICKET_CHOICE_PROMPT = "ticketConfirmPrompt";
+const TICKET_TRANSITION_DIALOG_PROMPT = "ticketIdDialogPrompt";
 const QNA_DIALOG_ID = "qnaDialog";
+const TICKET_DIALOG_ID = "TICKET_ID";
 const ROOT_DIALOG_ID = "rootQnAId"; // purpose?
 
 class QnADialog extends ComponentDialog {
@@ -35,7 +36,10 @@ class QnADialog extends ComponentDialog {
             this.rightDocument.bind(this),
             this.processActionSelection.bind(this)]))
             .addDialog(new ChoicePrompt(CHOICE_PROMPT))
-            .addDialog(new ConfirmPrompt(CONFIRM_PROMPT));
+            .addDialog(new WaterfallDialog(TICKET_TRANSITION_DIALOG_PROMPT, [
+                this.confirmTicketTransition.bind(this),
+                this.redirectToTicketDialog.bind(this)]))
+            .addDialog(new ChoicePrompt(TICKET_CHOICE_PROMPT));
 
         this.initialDialogId = QNA_DIALOG_ID;
     }
@@ -58,11 +62,12 @@ class QnADialog extends ComponentDialog {
         // add results that were not already recieved
         const qnaResultsNew = [];
         const qnaResults = await this.getTop5QnAMakerResults(step.context);
+        // no qna results
         if (qnaResults.length < 1) {
             // a result has already been presented
             if (this.dialogState.presented_results.length > 0) {
                 await step.context.sendActivity("Again no luck, I'll write a ticket for you to help you with your problem.");
-                return step.replaceDialog("TICKET_ID");
+                step.replaceDialog("TICKET_ID");
             } else {
                 await step.context.sendActivity("Sorry, no result, please specify your problem.");
                 return step.endDialog();
@@ -73,6 +78,11 @@ class QnADialog extends ComponentDialog {
                 qnaResultsNew.push(element);
             }
         });
+        // now new unique qna results
+        if (qnaResultsNew.length < 1) {
+            await step.context.sendActivity("Again no luck.");
+            return step.replaceDialog(TICKET_TRANSITION_DIALOG_PROMPT);
+        }
         // sort qna results according to propability
         // this.dialogState.qna_results
         // add result with highest confidence
@@ -113,11 +123,12 @@ class QnADialog extends ComponentDialog {
         case "Yes":
             resetDialogState(this.dialogState);
             await step.context.sendActivity("Great, can I help you with anything else?");
+            this.resetDialogState();
             return step.endDialog();
         case "No, show me more results":
             if (this.dialogState.qna_results.length < 1) {
-                await step.context.sendActivity("Thats all, please create a ticket");
-                return step.replaceDialog("TICKET_ID");
+                await step.context.sendActivity("Thats all I have.");
+                return step.replaceDialog(TICKET_TRANSITION_DIALOG_PROMPT);
             } else {
                 const attachments = createAttachments(this.dialogState);
                 await step.context.sendActivity({
@@ -127,14 +138,28 @@ class QnADialog extends ComponentDialog {
                 return step.endDialog();
             }
         case "I want to rephrase my question":
-            await step.context.sendActivity("Go ahead, I'll try my best");
+            await step.context.sendActivity("Go ahead, I'll try my best.");
             return step.endDialog();
         }
         return step.endDialog();
     };
 
-    async restartDialog (step) {
-        return step.replaceDialog(QNA_DIALOG_ID);
+    async confirmTicketTransition (step) {
+        return step.prompt(TICKET_CHOICE_PROMPT, {
+            prompt: "Do you want to create a ticket for your problem?",
+            choices: ChoiceFactory.toChoices(["Yes", "No"]),
+            style: ListStyle.heroCard
+        });
+    }
+
+    async redirectToTicketDialog (step) {
+        switch (step.result.value) {
+        case "Yes":
+            return step.replaceDialog("TICKET_ID");
+        case "No":
+            await step.context.sendActivity("Ok, just ask me again if you are ready!");
+            return step.endDialog();
+        }
     }
 
     async getTop5QnAMakerResults (context) {
@@ -216,10 +241,12 @@ function createAdaptiveCard (id) {
     };
 };
 
-                
-                var attachment = await storageHelper.getAttachment("dokumente", "185.pdf");                await context.sendActivity({
-                   text: "this might help you:",
-                   attachments: [attachment]
-               });
+/*              
+var attachment = await storageHelper.getAttachment("dokumente", "185.pdf");                
+await context.sendActivity({
+    text: "this might help you:",
+    attachments: [attachment]
+});
+*/
 
 module.exports.QnADialog = QnADialog;
