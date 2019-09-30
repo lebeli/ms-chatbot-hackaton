@@ -26,8 +26,6 @@ class AzureStorageHelper {
                     reject(err);
                 } else {
                     resolve(this.result = data.entries);
-
-                    console.log("Show me 1.5");
                 }
             });
         });
@@ -86,13 +84,13 @@ class AzureStorageHelper {
     downloadContent (containerName, blobName) {
         // get the stream, that reads the blob content from azure
         var blobStream = this.blobService.createReadStream(containerName, blobName + ".pdf", (err, res) => {
-            if (!err) {
-                console.log("createReadStream() successfully");
+            if (err) {
+                console.log(err);
             }
         }).pipe(new base64.Base64Encode()); // we need to encode it into base64 to avoid problems, if we won't save it temporarely
 
         // we want to work with async / await, so we need to return a Promise
-        var myPromise = new Promise(function (resolve, reject) {
+        return new Promise(function (resolve, reject) {
             blobStream.on("data", async data => {
                 // after everything is downloaded, create the json with our content
                 resolve(
@@ -104,12 +102,10 @@ class AzureStorageHelper {
                     });
             });
         });
-
-        return myPromise;
     }
 
     /**
-     * Return the Attachment, based on the given input.
+     * Return a single attachment, based on the given input.
      * @param {*} container
      * @param {*} blob
      */

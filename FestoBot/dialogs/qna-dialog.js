@@ -8,30 +8,41 @@ const { AzureStorageHelper } = require("../services/azurestorage");
 const { CardFactory, AttachmentLayoutTypes } = require("botbuilder");
 const { QnAMaker } = require("botbuilder-ai");
 
-const TEXT_PROMPT = "textPrompt";
+// prompt ids
 const CHOICE_PROMPT = "choicePrompt";
 const MULTIPLE_CHOICE_PROMPT = "multipleChoicePrompt";
 const SINGLE_CONFIRM_PROMPT = "singleConfirmPrompt";
 const MULTIPLE_CONFIRM_PROMPT = "multipleConfirmPrompt";
-const QNA_DIALOG_ID = "qnaDialog";
-const ROOT_DIALOG_ID = "rootQnAId"; // purpose?
 
+// dialog ids
+const QNA_DIALOG_ID = "qnaDialog";
+const ROOT_DIALOG_ID = "rootQnAId"; 
+
+/**
+ * Dialog, which searches the QnA-Knowledge base based on the given user input
+ * 
+ * The QnA-Knowledge will return an document id, which will then get downloaded and served to the user.
+ * If the document, that matches that question is not helpful, the user can request additional documents.
+ * if those are not helpful, the bot offers to create a ticket through an dialog as an alternative
+ */
 class QnADialog extends ComponentDialog {
     constructor (dialogState) {
         // dialogState to save information
         // step = dialogContext in bot.js for dialog flow controll
         super(ROOT_DIALOG_ID);
 
+        // the endpoint for our knowledge base
         const endpointQnA = {
-            knowledgeBaseId: "8b28463a-ad6f-45fc-9cba-789a2d935b1f",
-            endpointKey: "4ccf2f7f-ecb6-4923-994c-8121615eca4e",
-            host: "https://festokb.azurewebsites.net/qnamaker"
+            knowledgeBaseId: process.env.QNA_KNOWLEDGEBASE_ID,
+            endpointKey: process.env.QNA_ENDPOINT_KEY,
+            host: process.env.QNA_URL
         };
+        // create our service-objects
         this.qnaService = new QnAMaker(endpointQnA, {});
         this.storageHelper = new AzureStorageHelper();
-
         this.dialogState = dialogState;
 
+        // define our waterfall dialog
         this.addDialog(new WaterfallDialog(QNA_DIALOG_ID, [
             this.presentSingleResult.bind(this),
             this.rightDocument.bind(this),
@@ -45,6 +56,10 @@ class QnADialog extends ComponentDialog {
         this.initialDialogId = QNA_DIALOG_ID;
     }
 
+    /**
+     * Create the attachments
+     * @param {*} dialogState 
+     */
     async createAttachments (dialogState) {
         const attachments = [];
         return new Promise((resolve, reject) => {
@@ -58,10 +73,8 @@ class QnADialog extends ComponentDialog {
         });
     }
 
+
     async presentSingleResult (step) {
-        // TODO: just testing, do delete
-        // step.replaceDialog(QNA_DIALOG_ID);
-        // get IDs for already presented results
         const presentedResultsIDs = [];
         this.dialogState.presented_results.forEach(function (element) {
             presentedResultsIDs.push(element.answer);
@@ -75,7 +88,8 @@ class QnADialog extends ComponentDialog {
         step.context._activity.text = this.dialogState.question;
         // add results that were not already recieved
         const qnaResultsNew = [];
-        const qnaResults = await this.getTop5QnAMakerResults(step.context);
+        // search the top five qna results
+        const qnaResults = await this.getTopResults(step.context, 5);
         if (qnaResults.length < 1) {
             // a result has already been presented
             if (this.dialogState.presented_results.length > 0) {
@@ -117,6 +131,10 @@ class QnADialog extends ComponentDialog {
         return step.next();
     }
 
+    /**
+     * Check whether the first presented document was helpful 
+     * @param {*} step 
+     */
     async rightDocument (step) {
         return step.prompt(CHOICE_PROMPT, {
             prompt: "Is the document helpful?",
@@ -125,6 +143,10 @@ class QnADialog extends ComponentDialog {
         });
     }
 
+    /**
+     * Ask the user, if he needs further help or wether the presented documents were helpful for him
+     * @param {*} step 
+     */
     async multipleAnswersHelpful (step) {
         return step.prompt(MULTIPLE_CHOICE_PROMPT, {
             prompt: "Do you need further help?",
@@ -133,6 +155,11 @@ class QnADialog extends ComponentDialog {
         });
     }
 
+    /**
+     * When the user reached this step, the chatbot asked him if his problem is solved
+     * based on the response, we will present more results or fall back into the idle state
+     * @param {*} step 
+     */
     async processActionSelection (step) {
         switch (step.result.value) {
         case "Yes":
@@ -140,34 +167,43 @@ class QnADialog extends ComponentDialog {
             await step.context.sendActivity("Great, can I help you with anything else?");
             return step.endDialog();
         case "No, show me more results":
+            // maybe we dont have more documents
             if (this.dialogState.qna_results.length < 1) {
-                await step.context.sendActivity("Sorry, there are not more documents.");
+                await step.context.sendActivity("Sorry, there are no more documents.");
+                // if the first document was not helpful, and there are no more documents left, 
+                // the user probably wants to create a ticket
                 return step.replaceDialog("TICKET_ID");
             } else {
+                // get the other relevant documents
                 const attachments = await this.createAttachments(this.dialogState);
+                // present the user our documents
                 await step.context.sendActivity({
                     attachments: attachments
                 });
-                // return step.endDialog();
+
                 return step.next();
             }
         }
         return step.endDialog();
     };
 
-    async restartDialog (step) {
-        return step.replaceDialog(QNA_DIALOG_ID);
-    }
-
-    async getTop5QnAMakerResults (context) {
+    /**
+     * Get the most relevant documents
+     * @param {*} context 
+     */
+    async getTopResults (context, amount) {
         var qnaMakerOptions = {
             scoreThreshold: 0.0, // Default is 0.3
-            Top: 5 // Get 5 best answers
+            Top: amount // Get 5 best answers
         };
         var result = await this.qnaService.getAnswers(context, qnaMakerOptions);
         return result;
     };
 
+    /**
+     * reset the dialogstate
+     * @param {*} dialogState 
+     */
     resetDialogState () {
         this.dialogState.qna_results = [];
         this.dialogState.presented_results = [];
@@ -181,6 +217,10 @@ class QnADialog extends ComponentDialog {
 ////////               Helper functions                  //////////
 ///////////////////////////////////////////////////////////////////
 
+/**
+ * reset the dialogstate, for static usage
+ * @param {*} dialogState 
+ */
 function resetDialogState (dialogState) {
     dialogState.qna_results = [];
     dialogState.presented_results = [];
@@ -189,53 +229,5 @@ function resetDialogState (dialogState) {
     dialogState.new_input = false;
 }
 
-function createAttachments (dialogState) {
-    const attachments = [];
-    dialogState.qna_results.forEach(function (element) {
-        attachments.push(createHeroCard(element.answer));
-    });
-    return attachments;
-}
-
-function createHeroCard (id) {
-    const card = CardFactory.heroCard(
-        "Document " + id,
-        CardFactory.images(["https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/PDF_file_icon.svg/833px-PDF_file_icon.svg.png"]),
-        CardFactory.actions([
-            {
-                type: "messageBack",
-                title: "Open",
-                value: id
-            }
-        ])
-    );
-    return card;
-}
-
-function createAdaptiveCard (id) {
-    return {
-        type: "AdaptiveCard",
-        version: "1.0",
-        body: [
-            {
-                type: "TextBlock",
-                text: "Dokument " + id
-            },
-            {
-                type: "Image",
-                altText: "",
-                // url: ".\\resources\\pdf_icon.png",
-                url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/PDF_file_icon.svg/833px-PDF_file_icon.svg.png",
-                selectAction: {
-                    type: "Action.OpenUrl",
-                    url: "D:\\chatbot\\festo\\" + id + ".pdf"
-                },
-                separator: true,
-                size: "Medium"
-            }
-        ],
-        $schema: "http://adaptivecards.io/schemas/adaptive-card.json"
-    };
-};
 
 module.exports.QnADialog = QnADialog;

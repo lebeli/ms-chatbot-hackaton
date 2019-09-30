@@ -29,9 +29,6 @@ const {
     AzureStorageHelper
 } = require("./services/azurestorage");
 
-const {
-    Summary
-} = require("./services/summary");
 const WelcomeCard = require("./resources/WelcomeCard.json");
 const { CardFactory, MessageFactory } = require("botbuilder");
 
@@ -52,17 +49,19 @@ class FestoBot extends ActivityHandler {
 
         this.qnaDialog = new QnADialog(this.dialogState);
         this.ticketDialog = new TicketDialog(this.dialogState);
-        this.helpDialog = new HelpDialog(this.dialogState);
+        
+        this.helpDialog = new HelpDialog();
         this.dialogSet = new DialogSet(this.dialogState);
-        this.dialogSet.add(this.qnaDialog); // TODO: add further dialogs for tickets etc.
+        this.dialogSet.add(this.qnaDialog);
         this.dialogSet.add(this.ticketDialog);
         this.dialogSet.add(this.helpDialog);
 
         this.onMessage(async (context, next) => {
+           
             var endpointLuis = {
-                applicationId: "e3ed9236-2b5e-45ee-8eac-0f167760ee7c",
-                endpointKey: "f5f345087c6a4d458d3a981900e270f2",
-                endpoint: "https://westeurope.api.cognitive.microsoft.com/luis/v2.0/apps/e3ed9236-2b5e-45ee-8eac-0f167760ee7c?verbose=true&timezoneOffset=0&subscription-key=7719b427d93d4fdd9722766c75b85f3e&q="
+                applicationId: process.env.LUIS_APPLICATION_ID,
+                endpointKey: process.env.LUIS_ENDPOINT_KEY,
+                endpoint: process.env.LUIS_ENDPOINT
             };
 
             let recognizer = null;

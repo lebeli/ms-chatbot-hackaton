@@ -1,6 +1,3 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
-
 const {
     ChoiceFactory,
     ChoicePrompt,
@@ -19,12 +16,12 @@ const WATERFALL_DIALOG = "WATERFALL_DIALOG";
 const ROOT_DIALOG_ID = "HELP_ID"; // purpose?
 const HelpCard = require("../resources/HelpCard.json");
 
+/**
+ * Dialog, that guides the user through the various ways he will be able to interact with the chatbot
+ */
 class HelpDialog extends ComponentDialog {
-    constructor (userState) {
+    constructor () {
         super(ROOT_DIALOG_ID);
-
-        // this.userProfile = userState.createProperty(USER_PROFILE);
-
         this.addDialog(new TextPrompt(TEXT_PROMPT));
         this.addDialog(new ChoicePrompt(CHOICE_PROMPT));
 
@@ -37,22 +34,10 @@ class HelpDialog extends ComponentDialog {
     }
 
     /**
-     * The run method handles the incoming activity (in the form of a TurnContext) and passes it through the dialog system.
-     * If no dialog is active, it will start the default dialog.
-     * @param {*} turnContext
-     * @param {*} accessor
+     * Create an adaptive card, which points the user to the various ways he can interact with the chatbot
+     * This can be either asking a question or creating a ticket
+     * @param {*} step 
      */
-    async run (turnContext, accessor) {
-        const dialogSet = new DialogSet(accessor);
-        dialogSet.add(this);
-
-        const dialogContext = await dialogSet.createContext(turnContext);
-        const results = await dialogContext.continueDialog();
-        if (results.status === DialogTurnStatus.empty) {
-            await dialogContext.beginDialog(this.id);
-        }
-    }
-
     async helpCardStep (step) {
         // adaptive card to give the user information about the bot
         await step.context.sendActivity({
@@ -66,6 +51,11 @@ class HelpDialog extends ComponentDialog {
         });
     }
 
+    /**
+     * Choice step, always ends with end Dialog
+     * This step shows the user, that he can simply ask the question without further steps
+     * @param {*} step 
+     */
     async helpChoiceStep (step) {
         // if user has choosen to ask a question he gets asked to type it in
         // otherwise the ticket dialog starts
