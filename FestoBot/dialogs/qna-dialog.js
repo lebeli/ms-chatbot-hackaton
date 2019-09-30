@@ -88,7 +88,7 @@ class QnADialog extends ComponentDialog {
         const qnaResultsNew = [];
         // search the top five qna results
         const qnaResults = await this.getTopResults(step.context, 5);
-        if (qnaResults.length < 1) {
+        if (qnaResults.length < 1 || qnaResults[0].id == -1) {
             // a result has already been presented
             if (this.dialogState.presented_results.length > 0) {
                 await step.context.sendActivity("Again no luck, I'll write a ticket for you to help you with your problem.");
