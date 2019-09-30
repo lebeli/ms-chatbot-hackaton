@@ -10,7 +10,9 @@ const { QnAMaker } = require("botbuilder-ai");
 
 const TEXT_PROMPT = "textPrompt";
 const CHOICE_PROMPT = "choicePrompt";
-const CONFIRM_PROMPT = "confirmPrompt";
+const MULTIPLE_CHOICE_PROMPT = "multipleChoicePrompt";
+const SINGLE_CONFIRM_PROMPT = "singleConfirmPrompt";
+const MULTIPLE_CONFIRM_PROMPT = "multipleConfirmPrompt";
 const QNA_DIALOG_ID = "qnaDialog";
 const ROOT_DIALOG_ID = "rootQnAId"; // purpose?
 
@@ -33,9 +35,12 @@ class QnADialog extends ComponentDialog {
         this.addDialog(new WaterfallDialog(QNA_DIALOG_ID, [
             this.presentSingleResult.bind(this),
             this.rightDocument.bind(this),
-            this.processActionSelection.bind(this)]))
+            this.processActionSelection.bind(this),
+            this.multipleAnswersHelpful.bind(this)]))
             .addDialog(new ChoicePrompt(CHOICE_PROMPT))
-            .addDialog(new ConfirmPrompt(CONFIRM_PROMPT));
+            .addDialog(new ChoicePrompt(MULTIPLE_CHOICE_PROMPT))
+            .addDialog(new ConfirmPrompt(SINGLE_CONFIRM_PROMPT))
+            .addDialog(new ConfirmPrompt(MULTIPLE_CONFIRM_PROMPT));
 
         this.initialDialogId = QNA_DIALOG_ID;
     }
@@ -115,7 +120,15 @@ class QnADialog extends ComponentDialog {
     async rightDocument (step) {
         return step.prompt(CHOICE_PROMPT, {
             prompt: "Is the document helpful?",
-            choices: ChoiceFactory.toChoices(["Yes", "No, show me more results", "I want to rephrase my question"]),
+            choices: ChoiceFactory.toChoices(["Yes", "No, show me more results"]),
+            style: ListStyle.heroCard
+        });
+    }
+
+    async multipleAnswersHelpful (step) {
+        return step.prompt(MULTIPLE_CHOICE_PROMPT, {
+            prompt: "Do you need further help?",
+            choices: ChoiceFactory.toChoices(["Yes, create a ticket", "No, I am fine"]),
             style: ListStyle.heroCard
         });
     }
@@ -135,11 +148,9 @@ class QnADialog extends ComponentDialog {
                 await step.context.sendActivity({
                     attachments: attachments
                 });
-                return step.endDialog();
+                // return step.endDialog();
+                return step.next();
             }
-        case "I want to rephrase my question":
-            await step.context.sendActivity("Go ahead, I'll try my best");
-            return step.endDialog();
         }
         return step.endDialog();
     };

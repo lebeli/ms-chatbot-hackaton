@@ -38,9 +38,6 @@ const { CardFactory, MessageFactory } = require("botbuilder");
 class FestoBot extends ActivityHandler {
     constructor (conversationState, userState) {
         super();
-
-        // this.sum = new Summary();
-
         // store for dialog and user state
         this.conversationState = conversationState;
         this.userState = userState;
@@ -87,9 +84,6 @@ class FestoBot extends ActivityHandler {
 
             switch (topIntent) {
             case "Utilities_Help":
-                // await this.helpDialog.run(context, this.dialogState);
-                // await context.sendActivity(`Happy to help you '${topIntent}'`);
-                
                 if (results.status === DialogTurnStatus.empty) {
                     this.qnaDialog.resetDialogState();
                     await dialogContext.beginDialog(this.helpDialog.id);
@@ -97,10 +91,6 @@ class FestoBot extends ActivityHandler {
                 break;
             case "CreateTicket":
                 // jetzt müssen wir ein ticket starten
-                // await this.ticketDialog.run(context, this.dialogState);
-
-                // const dialogContext = await dialogSet.createContext(turnContext);
-                // const results = await dialogContext.continueDialog();
                 await dialogContext.beginDialog(this.ticketDialog.id);
                 
                 await next();
